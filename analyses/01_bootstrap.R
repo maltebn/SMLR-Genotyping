@@ -1,7 +1,7 @@
 library(tidyverse)
-library(doFuture)
+# library(doFuture)
 library(future.apply)
-library(EnvStats)
+# library(EnvStats)
 source("00_functions_and_global_definitions.R")
 
 workers <- floor(availableCores()[[1]]*3/4)
@@ -9,9 +9,9 @@ plan(multisession, workers = workers)
 reps <- 10^3
 
 # dd_GT <- readRDS(file.path("..", "data", "00_dd_GT.rds"))
-dd_GT_2nd <- readRDS(file.path("..", "data", "00_dd_GT_val.rds"))
-# dd_GT_both <- dd_GT_val |> bind_rows(dd_GT[names(dd_GT_2nd)])
-true_profiles_val <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds"))
+dd_GT_2nd <- readRDS(file.path("..", "data", "00_dd_GT_2nd.rds"))
+# dd_GT_both <- dd_GT_2nd |> bind_rows(dd_GT[names(dd_GT_2nd)])
+true_profiles_2nd <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds"))
 
 
 dils <- list(50, c(50, 25), 25, 12.5, 6.25)

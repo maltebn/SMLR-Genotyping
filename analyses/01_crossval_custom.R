@@ -1,7 +1,7 @@
 library(tidyverse)
-library(doFuture)
+# library(doFuture)
 library(future.apply)
-library(EnvStats)
+# library(EnvStats)
 source("00_functions_and_global_definitions.R")
 
 workers <- floor(availableCores()[[1]]*3/4)
