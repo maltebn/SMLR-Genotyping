@@ -113,9 +113,9 @@ dd_dils_FSIGEN_h <- list(list("dil_train" = c(250, 125, 62.5), "dil_test" = c(25
 for (dil_range in c("low", "high")) {
   
 
-for (vst in c("_", "_log_", "_I_")) {
+for (vst in c("_sqrt_", "_log_", "_I_")) {
   BI <- c(0, 1, -2)
-  if (vst == "_") {
+  if (vst == "_sqrt_") {
     f_vs <- sqrt
   } else if (vst == "_log_") {
     f_vs <- function(x) {log(x+1)}
