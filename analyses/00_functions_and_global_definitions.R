@@ -3,15 +3,10 @@
 #-----------------------#
 t_maf <- list("het" = c(0.35, 0.65), "hom" = 0.95)
 t_ppc <- c(0.3, 0.7)
-# t_Hb <- 2/3 # Threshold for the heterozygous allele-balance for biological traces
 t_cov <- 100 # Threshold for the minimum coverage
 t_q <- 0.85 # Probability threshold for symmetry model
 no_call <- "NC" # Naming of no-calls (WARNING: do NOT change!!! I have used this
 # object throughout the script for various logical operations
-# where some are done on the Genotype-variable which is loaded
-# from the data files and I haven't (yet, if ever) implemented a
-# renaming of the observations from this variable, i.e its
-# NN-observations will NOT change name if no_call changes name)
 f_vst <- function(x) sqrt(x)
 
 
