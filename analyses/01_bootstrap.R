@@ -13,6 +13,8 @@ true_profiles_2nd <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds")
 
 
 dils <- list(50, c(50, 25), 25, 12.5, 6.25)
+set.seed(1913)
+seeds <- sample(1:1000, size=length(dils))
 
 for (vst in c("sqrt", "log", "I")) {
   if (vst == "I") {
@@ -33,7 +35,7 @@ for (vst in c("sqrt", "log", "I")) {
         dd_boot_create_samplesize(reps, stratify = "Marker",
                                   f=vst, INT=intercept, b_int = initial_beta,
                                   method = "Nelder-Mead",
-                                  control_list = list(maxit = 10^3, reltol=sqrt(.Machine$double.eps)))
+                                  control_list = list(maxit = 10^3, reltol=sqrt(.Machine$double.eps)), seed = seeds)
     })
     
     dd_boot_fine <- dd_boot_fine |> 
