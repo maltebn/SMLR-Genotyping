@@ -52,7 +52,7 @@ for (vst in c("sqrt", "log", "I")) {
       }) |> bind_rows()
     dd_boot_fine$Converged <- as.integer(dd_boot_fine$n_WC != 0)
     
-    saveRDS(dd_boot_fine, file.path("..", "data", paste0(bootstrap_name, "1K.rds")))
+    saveRDS(dd_boot_fine, file.path("..", "data", paste0(bootstrap_name, "_1K.rds")))
     gc()
   }
 }
