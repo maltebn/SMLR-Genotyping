@@ -792,7 +792,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         
         return(m)
       })
-    }, future.seed = TRUE, future.scheduling = 1)
+    }, future.seed = 1913, future.scheduling = 1)
   } else if (is.numeric(stratify)) {
     df_het <- filter(df, Genotype_true == "A1A2")
     df_hom <- filter(df, Genotype_true != "A1A2")
@@ -833,7 +833,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         
         return(m)
       })
-    }, future.seed = TRUE, future.scheduling = 1)
+    }, future.seed = 1913, future.scheduling = 1)
   } else {
     future_lapply(1:repititions, function(x){
       lapply(ss, function(s){
@@ -853,7 +853,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         
         return(m)
       })
-    }, future.seed = TRUE, future.scheduling = 1)
+    }, future.seed = 1913, future.scheduling = 1)
   }
 }
 
