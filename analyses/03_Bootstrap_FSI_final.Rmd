@@ -11,7 +11,6 @@ library(tidyverse)
 library(ggnewscale) # Enables multiple colour- and fill-scales
 library(latex2exp)
 library(patchwork)
-library(EnvStats)
 source("00_functions_and_global_definitions.R")
 
 plot_title_size <- 7
@@ -46,22 +45,22 @@ dd_GT_2nd |> group_by(Dilution) |>
 
 What is the proportion of heterozygous genotypes for each individual?
 ```{r}
-(het_props_orig <- dd_GT |> filter(Dilution == 1000) |> 
-  group_by(ID) |> 
-  summarise("Proportion a1a1" = sum(Genotype_true_AA == "A1A1")/n(),
-            "Proportion a2a2" = sum(Genotype_true_AA == "A2A2")/n(),
-            "Proportion a1a2" = sum(Genotype_true_AA == "A1A2")/n()))
+# (het_props <- dd_GT |> filter(Dilution == 1000) |>
+#   group_by(ID) |>
+#   summarise("Proportion a1a1" = sum(Genotype_true_AA == "A1A1")/n(),
+#             "Proportion a2a2" = sum(Genotype_true_AA == "A2A2")/n(),
+#             "Proportion a1a2" = sum(Genotype_true_AA == "A1A2")/n()))
 
-(het_props_val <- true_profiles_val |> group_by(ID) |> 
-  summarise("Proportion a1a1" = sum(Genotype_true_AA == "A1A1")/n(),
-            "Proportion a2a2" = sum(Genotype_true_AA == "A2A2")/n(),
-            "Proportion a1a2" = sum(Genotype_true_AA == "A1A2")/n()))
+# (het_props_2nd <- true_profiles_2nd |> group_by(ID) |>
+#   summarise("Proportion a1a1" = sum(Genotype_true_AA == "A1A1")/n(),
+#             "Proportion a2a2" = sum(Genotype_true_AA == "A2A2")/n(),
+#             "Proportion a1a2" = sum(Genotype_true_AA == "A1A2")/n()))
 
-het_props <- c(het_props_orig$`Proportion a1a2`, het_props_val$`Proportion a1a2`)
-eb <- ebeta(het_props)
-bp <- seq(0.15,0.35, 0.0125)
-hist(het_props, breaks = seq(0.15,0.40, 0.0125), probability = T)
-lines(bp, dbeta(bp, eb$parameters[[1]], eb$parameters[[2]]), col = 2, lwd = 2)
+# het_props <- c(het_props$`Proportion a1a2`, het_props_2nd$`Proportion a1a2`)
+# eb <- EnvStats::ebeta(het_props)
+# bp <- seq(0.15,0.35, 0.0125)
+# hist(het_props, breaks = seq(0.15,0.40, 0.0125), probability = T)
+# lines(bp, dbeta(bp, eb$parameters[[1]], eb$parameters[[2]]), col = 2, lwd = 2)
 ```
 
 
@@ -71,7 +70,7 @@ init_model_dil_fine <- lapply(dils, function(d) {
   df <- dd_GT_2nd |> filter(Dilution %in% d)
   m <- fit_symmetry_model2(df, f = function(x) sqrt(x), intercept = TRUE, control_list = list(maxit = 10^3))
   m$Dilution <- paste0(d, "pg", collapse = " & ")
-  m$Het_prop_pop <- nrow(filter(true_profiles_val, Genotype_true_AA == "A1A2")) / nrow(true_profiles_val)
+  m$Het_prop_pop <- nrow(filter(true_profiles_2nd, Genotype_true_AA == "A1A2")) / nrow(true_profiles_2nd)
   m$f <- "sqrt"
   m$beta0 <- m$par[1]
   m$beta1 <- m$par[2]
@@ -85,7 +84,7 @@ init_model_dil_fine <- lapply(dils, function(d) {
                names_to = "Parameter",
                values_to = "Sample_estimate")
 
-dd_boot_fine <- readRDS(file.path("..", "data", "00_obj_bootstrap_sqrt1K.rds"))
+dd_boot_fine <- readRDS(file.path("..", "data", "01_obj_bootstrap_sqrt_1K.rds"))
 
 dd_boot_fine <- dd_boot_fine |> 
   mutate("Complete separation" = if_else(n_WC == 0, "Yes", "No")) |> 
@@ -102,12 +101,14 @@ dd_boot_long_fine <- dd_boot_fine |>
   filter(Samplesize >= 4)
 ```
 
+# Value of the negative log-likelihood function at the found set of parameters
 ```{r}
 dd_boot_fine |> filter(Dilution=="50pg", Samplesize == 1) |> 
   arrange(Value) |> 
   mutate(Idx=1:n()) |> 
 ggplot(aes(x=`Complete separation`, y=Value, colour=`Complete separation`)) + 
-  geom_point()
+  geom_point() +
+  ylab("Negative log-likelihood")
 ```
 
 
