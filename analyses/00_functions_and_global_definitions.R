@@ -733,7 +733,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
     f <- function(x) x
   }
   
-  persons <- unique(df$Person)
+  individuals <- unique(df$ID)
   dilutions <- unique(df$Dilution)
   runs <- unique(df$Run)
   markers <- unique(df$Target.ID)
@@ -741,13 +741,13 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
   # If df has more than one dilution, the point is to look at the sampling as if
   # a lab has made a dilutions series where they want to fit using all dilutions
   # Hence, in that case we will sample an equal amount of SNPs/markers from each
-  # dilution, so each sample size increment corresponds to adding a new person.
+  # dilution, so each sample size increment corresponds to adding a new individual.
   # This means that if we have e.g. two dilutions, then the increments of sample
   # sizes will be twice the increment as when we have just one dilution.
   # We will stop the sample size when it is as big as our original data, which
   # is the standard sample size when doing bootstrap, i.e. we let the sample
-  # size go up to length(persons)*length(runs)
-  if (!is.numeric(seq_end)) {seq_end <- length(persons)*length(runs)}
+  # size go up to length(individuals)*length(runs)
+  if (!is.numeric(seq_end)) {seq_end <- length(individuals)*length(runs)}
   ss <- seq(from=seq_start, to=seq_end, by=1)
   
   if (is.character(stratify)) {
@@ -757,8 +757,8 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         # different drop-out rates, so not all bootstrap samples of size s will
         # become of size s, but only the size reflected in the data.
         df_test <- lapply(markers, function(m) {
-          pers <- sample(persons, size = s, replace = TRUE)
-          df_persons <- filter(df, Person %in% pers)
+          ids <- sample(individuals, size = s, replace = TRUE)
+          df_individuals <- filter(df, ID %in% ids)
           # We should see Run and Dilution as independent, since if we can't do
           # that, it implies that we should fit a new model each time we want to
           # use it, which would make it unusable. One could of course split the
@@ -775,16 +775,16 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
           # algorithm specific for this particular dataset, but this is not
           # worth the effort)
           if (length(runs) > 1) {
-            df_persons <- lapply(pers, function(p) {
+            df_individuals <- lapply(ids, function(p) {
               lapply(dilutions, function(d) {
-                df_dp <- filter(df_persons, Person == p, Dilution == d)
+                df_dp <- filter(df_individuals, ID == p, Dilution == d)
                 run_p <- sample(unique(df_dp$Run), 1)
                 filter(df_dp, Run == run_p)
               }) |> bind_rows()
             }) |> bind_rows()
           }
           
-          filter(df_persons, Target.ID == m)
+          filter(df_individuals, Target.ID == m)
         }) |> bind_rows()
         
         m <- fit_symmetry_model2(df_test, f=f, intercept = INT, method = method, control_list = control_list, b_int = b_int)
@@ -803,19 +803,19 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
     df_hom <- filter(df, Genotype_true != "A1A2")
     future_lapply(1:repititions, function(x){
       # Stratifying on heterozygous proportion excludes the possibility to also
-      # sample per person as different persons have different het_props.
+      # sample per individual as different individuals have different het_props.
       # Thus the point about stratifying on het_prop is to see if it suffices to
       # distinguish between observations just as het and hom and NOT considering
       # which marker they come from. This also implies that if we have more
       # dilutions and sample a set of markers in one of the dilutions, then we
-      # should NOT demand that it is the same markers from the same persons that
+      # should NOT demand that it is the same markers from the same individuals that
       # we sample in the other dilution, but simply just some set of the same
       # size and same genotype (on the het/hom-level). This does, however, make
       # it difficult to handle drop-outs, but maybe it is most informative NOT
       # to consider drop-outs in the bootstrap for sample size, because
       # different labs and populations may have different drop-out rates, so the
       # rate for this dataset may be of little relevance for others, in which
-      # case it may be much more illuminating to know how many persons with all
+      # case it may be much more illuminating to know how many individuals with all
       # SNPs observed, that should be used...
       lapply(ss, function(s){
         if (length(stratify) == 2) {stratify <- rbeta(1, stratify[1], stratify[2])}
@@ -861,138 +861,6 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
     }, future.seed = TRUE, future.scheduling = 1)
   }
 }
-# dd_boot_create_samplesize <- function(dfs, repititions, samplesizes, fun="sqrt", INT=TRUE, control_list=list(maxit = 500), b_int=c(0,1,-2), method = "Nelder-Mead", stratify=F) {
-#   if (fun == "sqrt") {
-#     f <- function(x) sqrt(x)
-#   } else if (fun == "log") {
-#     f <- function(x) log(x+1)
-#   } else if (fun == "I") {
-#     f <- function(x) x
-#   }
-#   if (is.numeric(stratify)) {
-#     dfs_het <- lapply(dfs, function(d) {d |> filter(Genotype_true_AA == "A1A2")})
-#     dfs_hom <- lapply(dfs, function(d) {d |> filter(Genotype_true_AA != "A1A2")})
-#     n_het <- sapply(dfs_het, nrow)
-#     n_hom <- sapply(dfs_hom, nrow)
-#     n <- n_het+n_hom
-#   } else {
-#     n <- sapply(dfs, nrow)
-#   }
-# 
-#   dilutions <- names(dfs)
-#   future_lapply(1:repititions, function(x){ # To be handled in parallel
-#     lapply(dilutions, function(dil){
-#       ss <- seq(from=samplesizes[["from"]], to=n[[dil]], by=samplesizes[["by"]])
-#       lapply(ss, function(s){
-#         if (is.numeric(stratify)) {
-#           if (length(stratify) == 1) {
-#             # If stratify is a single number, we stratify using just one global
-#             # proportion of heterozygous genotypes:
-#             idx_het <- sample(n_het[[dil]], size = round(s*stratify), replace = TRUE)
-#             idx_hom <- sample(n_hom[[dil]], size = round(s*(1-stratify)), replace = TRUE)
-#           } else {
-#             # If stratify is a vector, its elements should be parameters for a
-#             # beta-distribution, such that we can introduce some variance to the
-#             # proportion of heterozygous genotypes by drawing a new proportion
-#             # to stratify on for each bootstrap sample:
-#             stratify <- rbeta(1, stratify[1], stratify[2])
-#             idx_het <- sample(n_het[[dil]], size = round(s*stratify), replace = TRUE)
-#             idx_hom <- sample(n_hom[[dil]], size = round(s*(1-stratify)), replace = TRUE)
-#           }
-#           df_test <- bind_rows(dfs_het[[dil]][idx_het,], dfs_hom[[dil]][idx_hom,])
-#         } else {
-#           # If no stratification, we just draw randomly among all SNPs:
-#           idx <- sample(n[[dil]], size = s, replace = TRUE)
-#           df_test <- dfs[[dil]][idx,]
-#         }
-# 
-#         m <- fit_symmetry_model2(df_test, f=f, intercept = INT, method = method, control_list = control_list, b_int = b_int)
-#         df_test <- predict_prob_threshold(df_test, fit = m, GT_nucleotide = FALSE)
-#         m$n_WC <- sum(df_test$Genotype_true_AA != df_test$Genotype_pred_AA)
-#         m$f <- fun
-#         m$Samplesize <- s
-#         m$Dilution <- dil
-# 
-#         return(m)
-#       })
-#     })
-#   }, future.seed = TRUE, future.scheduling = 1)
-# }
-
-
-#---------------------------------------------#
-# Bootstrap create heterozygous proportion ####
-#---------------------------------------------#
-dd_boot_create_het_prop <- function(dfs, repititions, het_props, samplesize, fun="sqrt", INT=TRUE, control_list=list(maxit = 500), b_int=c(0,1,-2), method = "Nelder-Mead") {
-  if (fun == "sqrt") {
-    f <- function(x) sqrt(x)
-  } else if (fun == "log") {
-    f <- function(x) log(x+1)
-  } else if (fun == "I") {
-    f <- function(x) x
-  }
-  
-  lapply(dfs, function(df) {
-    dils <- unique(df$Dilution)
-    
-    future_lapply(het_props, function(h){ # To be handled in parallel
-      lapply(1:repititions, function(x) {
-        df_test <- lapply(dils, function(dil) {
-          dfs_het <- df |> filter(Genotype_true_AA == "A1A2", Dilution == dil)
-          dfs_hom <- df |> filter(Genotype_true_AA != "A1A2", Dilution == dil)
-          
-          idx_het <- sample(nrow(dfs_het), size = round(samplesize*h), replace = TRUE)
-          idx_hom <- sample(nrow(dfs_hom), size = round(samplesize*(1-h)), replace = TRUE)
-          
-          bind_rows(dfs_het[idx_het,], dfs_hom[idx_hom,])
-        }) |> bind_rows()
-        
-        m <- fit_symmetry_model2(df_test, f=f, intercept = INT, method = method, control_list = control_list, b_int = b_int)
-        df_test <- predict_prob_threshold(df_test, fit = m, GT_nucleotide = FALSE)
-        m$n_WC <- sum(df_test$Genotype_true_AA != df_test$Genotype_pred_AA)
-        m$f <- fun
-        m$Het_prop <- h
-        m$Dilution <- paste0(dils, "pg", collapse = " & ")
-        return(m)
-      })
-    }, future.seed = TRUE, future.scheduling = 1)
-
-  })
-}
-# dd_boot_create_het_prop <- function(dfs, repititions, het_props, samplesize, fun="sqrt", INT=TRUE, control_list=list(maxit = 500), b_int=c(0,1,-2), method = "Nelder-Mead") {
-#   if (fun == "sqrt") {
-#     f <- function(x) sqrt(x)
-#   } else if (fun == "log") {
-#     f <- function(x) log(x+1)
-#   } else if (fun == "I") {
-#     f <- function(x) x
-#   }
-#   dfs_het <- lapply(dfs, function(d) {d |> filter(Genotype_true_AA == "A1A2")})
-#   dfs_hom <- lapply(dfs, function(d) {d |> filter(Genotype_true_AA != "A1A2")})
-#   n_het <- sapply(dfs_het, nrow)
-#   n_hom <- sapply(dfs_hom, nrow)
-# 
-#   dilutions <- names(dfs)
-#   # ss <- seq(from=samplesizes[["from"]], to=samplesizes[["to"]], by=samplesizes[["by"]])
-#   future_lapply(1:repititions, function(x){ # To be handled in parallel
-#     lapply(dilutions, function(dil){
-#       lapply(het_props, function(h){
-#         idx_het <- sample(n_het[[dil]], size = round(samplesize*h), replace = TRUE)
-#         idx_hom <- sample(n_hom[[dil]], size = round(samplesize*(1-h)), replace = TRUE)
-#         df_test <- bind_rows(dfs_het[[dil]][idx_het,], dfs_hom[[dil]][idx_hom,])
-# 
-#         m <- fit_symmetry_model2(df_test, f=f, intercept = INT, method = method, control_list = control_list, b_int = b_int)
-#         df_test <- predict_prob_threshold(df_test, fit = m, GT_nucleotide = FALSE)
-#         m$n_WC <- sum(df_test$Genotype_true_AA != df_test$Genotype_pred_AA)
-#         m$f <- fun
-#         m$Het_prop <- h
-#         m$Dilution <- dil
-# 
-#         return(m)
-#       })
-#     })
-#   }, future.seed = TRUE, future.scheduling = 1)
-# }
 
 
 #----------------------------#
@@ -1011,31 +879,31 @@ dd_boot_create_het_prop <- function(dfs, repititions, het_props, samplesize, fun
 # since if certain markers are more difficult for the kit to measure, and thus
 # have a higher rate of wrong calls, then this approach will give a more
 # realistic idea about the model's performance.
-cross_val_create <- function(df, n_pers_train, by_person=F,
+cross_val_create <- function(df, n_ids_train, by_individual=F,
                              f=f_vst, intercept=T, b_int=c(0,1,-2),
                              method="Nelder-Mead", hessian=F, control_list=list(maxit = 500)) {
-  pers <- unique(df$Person)
-  # The simplest way to cross-validate would be to split up the data by person,
-  # and then use the full profiles for these persons:
-  if (by_person) {
-    pers_for_train <- sample(pers, size = n_pers_train)
-    dd_train <- df |> filter(Person %in% pers_for_train)
-    dd_test <- df |> filter(!(Person %in% pers_for_train))
+  ids <- unique(df$ID)
+  # The simplest way to cross-validate would be to split up the data by individual,
+  # and then use the full profiles for these individuals:
+  if (by_individual) {
+    ids_for_train <- sample(ids, size = n_ids_train)
+    dd_train <- df |> filter(ID %in% ids_for_train)
+    dd_test <- df |> filter(!(ID %in% ids_for_train))
   } else {
     # Another way to do the cross-validation is to create new profiles from the
-    # existing ones. This can be done by again splitting by person, but then do so
+    # existing ones. This can be done by again splitting by individual, but then do so
     # for each marker. This ensures that if the data contains repeated
     # measurements (dilutions and/or runs), then these are split together.
     markers <- unique(df$Target.ID)
     dd_traintest <- lapply(markers, function(m) {
       dd_marker <- df |> filter(Target.ID == m)
-      pers_for_train <- sample(pers, size = n_pers_train)
-      # Some markers failed to be measured for all persons, so this procedure
-      # doesn't necessarily sample a number of n_pers_train
+      ids_for_train <- sample(ids, size = n_ids_train)
+      # Some markers failed to be measured for all individuals, so this procedure
+      # doesn't necessarily sample a number of n_ids_train
       # markers for each marker, which reflects the variability in the data and
       # makes the validation more realistic.
-      dd_train <- dd_marker |> filter(Person %in% pers_for_train)
-      dd_test <- dd_marker |> filter(!(Person %in% pers_for_train))
+      dd_train <- dd_marker |> filter(ID %in% ids_for_train)
+      dd_test <- dd_marker |> filter(!(ID %in% ids_for_train))
       
       return(list("Train" = dd_train, "Test" = dd_test))
     })
@@ -1058,12 +926,12 @@ cross_val_create <- function(df, n_pers_train, by_person=F,
   N_test <- nrow(dd_test)
   
   dd_test <- dd_test |> mutate(Genotype_EQC = threshold_rule(dd_test))
-  HID_NN <- sum(dd_test$Genotype == no_call)
-  HID_WC <- sum(dd_test$Genotype != no_call & dd_test$Genotype != dd_test$Genotype_true)
+  HSG_NN <- sum(dd_test$Genotype == no_call)
+  HSG_WC <- sum(dd_test$Genotype != no_call & dd_test$Genotype != dd_test$Genotype_true)
   EQC_NN <- sum(dd_test$Genotype_EQC == no_call)
   EQC_WC <- sum(dd_test$Genotype_EQC != no_call & dd_test$Genotype_EQC != dd_test$Genotype_true)
   
-  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HID_NN" = HID_NN, "HID_WC" = HID_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
+  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HSG_NN" = HSG_NN, "HSG_WC" = HSG_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
 }
 
 
@@ -1073,17 +941,17 @@ cross_val_create <- function(df, n_pers_train, by_person=F,
 cross_val_create_custom <- function(df, dils_train, dils_test,
                                     f=f_vst, intercept=T, b_int=c(0,1,-2), train_prop=0.75,
                                     method="Nelder-Mead", hessian=F, control_list=list(maxit = 500)) {
-  # We will loop trough each marker and dilution to sample n_pers_train SNPs within each
-  # marker for the training data. This is done by sampling n_pers_train individuals,
+  # We will loop trough each marker and dilution to sample n_ids_train SNPs within each
+  # marker for the training data. This is done by sampling n_ids_train individuals,
   # but for each marker we will use the same set of individuals for all dilutions
   # in order to resemble a dilution series.
-  # In this way, we use the original data as a template to put together n_pers_train new SNP profiles.
+  # In this way, we use the original data as a template to put together n_ids_train new SNP profiles.
   # If the train data uses dilutions from different series, the individuals will be different, so
-  # we can't use the same n_pers_train for all dilutions, but have to use two sets of n_pers_train
+  # we can't use the same n_ids_train for all dilutions, but have to use two sets of n_ids_train
   # individuals for each dilution series.
-  # If df has several runs for the same person (and same dilution), then we will
-  # treat the runs as independent, i.e. simply consider a new run as new persons
-  # by e.g. interaction(Run, Person), which have to be done before using this function,
+  # If df has several runs for the same individual (and same dilution), then we will
+  # treat the runs as independent, i.e. simply consider a new run as new individuals
+  # by e.g. interaction(Run, ID), which have to be done before using this function,
   # i.e. the dataframe used in the 'df'-argument of this function has to contain this interaction().
   # In cases where the test and train data uses different dilutions, one could argue
   # that all data for the dilution used for testing could be used for out-of-sample
@@ -1109,20 +977,20 @@ cross_val_create_custom <- function(df, dils_train, dils_test,
   markers <- unique(c(df_train1$Target.ID, df_test1$Target.ID))
   # We only want to grab the individuals in the training data, since we decide
   # that this is where we want the proportion 'train_prop' of the data to be.
-  pers_train <- unique(df_train1$Person)
-  n_pers_train <- floor(train_prop*length(pers_train))
+  ids_train <- unique(df_train1$ID)
+  n_ids_train <- floor(train_prop*length(ids_train))
   
-  split_pers <- lapply(markers, function(m) {
-    sample(pers_train, size = n_pers_train)
+  split_ids <- lapply(markers, function(m) {
+    sample(ids_train, size = n_ids_train)
   })
-  names(split_pers) <- markers
+  names(split_ids) <- markers
   # Doing the splitting and combining
   
-  df_train1 <- lapply(names(split_pers), function(m) {
-    df_train1 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+  df_train1 <- lapply(names(split_ids), function(m) {
+    df_train1 |> filter(ID %in% split_ids[[m]], Target.ID == m)
   }) |> bind_rows()
-  df_test1 <- lapply(names(split_pers), function(m) {
-    df_test1 |> filter(!(Person %in% split_pers[[m]]), Target.ID == m)
+  df_test1 <- lapply(names(split_ids), function(m) {
+    df_test1 |> filter(!(ID %in% split_ids[[m]]), Target.ID == m)
   }) |> bind_rows()
   
   #------------------------#
@@ -1130,19 +998,19 @@ cross_val_create_custom <- function(df, dils_train, dils_test,
   #------------------------#
   # Repeat same steps as for the first dilution series:
   markers <- unique(c(df_train2$Target.ID, df_test2$Target.ID))
-  pers_train <- unique(df_train2$Person)
-  n_pers_train <- floor(train_prop*length(pers_train))
+  ids_train <- unique(df_train2$ID)
+  n_ids_train <- floor(train_prop*length(ids_train))
   
-  split_pers <- lapply(markers, function(m) {
-    sample(pers_train, size = n_pers_train)
+  split_ids <- lapply(markers, function(m) {
+    sample(ids_train, size = n_ids_train)
   })
-  names(split_pers) <- markers
+  names(split_ids) <- markers
   
-  df_train2 <- lapply(names(split_pers), function(m) {
-    df_train2 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+  df_train2 <- lapply(names(split_ids), function(m) {
+    df_train2 |> filter(ID %in% split_ids[[m]], Target.ID == m)
   }) |> bind_rows()
-  df_test2 <- lapply(names(split_pers), function(m) {
-    df_test2 |> filter(!(Person %in% split_pers[[m]]), Target.ID == m)
+  df_test2 <- lapply(names(split_ids), function(m) {
+    df_test2 |> filter(!(ID %in% split_ids[[m]]), Target.ID == m)
   }) |> bind_rows()
   
   # Combining dilution both serie
@@ -1165,12 +1033,12 @@ cross_val_create_custom <- function(df, dils_train, dils_test,
   N_test <- nrow(df_test)
   
   df_test <- df_test |> mutate(Genotype_EQC = threshold_rule(df_test))
-  HID_NN <- sum(df_test$Genotype == no_call)
-  HID_WC <- sum(df_test$Genotype != no_call & df_test$Genotype != df_test$Genotype_true)
+  HSG_NN <- sum(df_test$Genotype == no_call)
+  HSG_WC <- sum(df_test$Genotype != no_call & df_test$Genotype != df_test$Genotype_true)
   EQC_NN <- sum(df_test$Genotype_EQC == no_call)
   EQC_WC <- sum(df_test$Genotype_EQC != no_call & df_test$Genotype_EQC != df_test$Genotype_true)
   
-  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HID_NN" = HID_NN, "HID_WC" = HID_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
+  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HSG_NN" = HSG_NN, "HSG_WC" = HSG_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
 }
 
 
@@ -1180,17 +1048,17 @@ cross_val_create_custom <- function(df, dils_train, dils_test,
 cross_val_create_custom_all <- function(df, dils_train, dils_test,
                                         f=f_vst, intercept=T, b_int=c(0,1,-2), train_prop=0.75,
                                         method="Nelder-Mead", hessian=F, control_list=list(maxit = 500)) {
-  # We will loop trough each marker and dilution to sample n_pers_train SNPs within each
-  # marker for the training data. This is done by sampling n_pers_train individuals,
+  # We will loop trough each marker and dilution to sample n_ids_train SNPs within each
+  # marker for the training data. This is done by sampling n_ids_train individuals,
   # but for each marker we will use the same set of individuals for all dilutions
   # in order to resemble a dilution series.
-  # In this way, we use the original data as a template to put together n_pers_train new SNP profiles.
+  # In this way, we use the original data as a template to put together n_ids_train new SNP profiles.
   # If the train data uses dilutions from different series, the individuals will be different, so
-  # we can't use the same n_pers_train for all dilutions, but have to use two sets of n_pers_train
+  # we can't use the same n_ids_train for all dilutions, but have to use two sets of n_ids_train
   # individuals for each dilution series.
-  # If df has several runs for the same person (and same dilution), then we will
-  # treat the runs as independent, i.e. simply consider a new run as new persons
-  # by e.g. interaction(Run, Person), which have to be done before using this function,
+  # If df has several runs for the same individual (and same dilution), then we will
+  # treat the runs as independent, i.e. simply consider a new run as new individuals
+  # by e.g. interaction(Run, ID), which have to be done before using this function,
   # i.e. the dataframe used in the 'df'-argument of this function has to contain this interaction().
   # In cases where the test and train data uses different dilutions, one could argue
   # that all data for the dilution used for testing could be used for out-of-sample
@@ -1216,20 +1084,20 @@ cross_val_create_custom_all <- function(df, dils_train, dils_test,
   markers <- unique(c(df_train1$Target.ID, df_test1$Target.ID))
   # We only want to grab the individuals in the training data, since we decide
   # that this is where we want the proportion 'train_prop' of the data to be.
-  pers_train <- unique(df_train1$Person)
-  n_pers_train <- floor(train_prop*length(pers_train))
+  ids_train <- unique(df_train1$ID)
+  n_ids_train <- floor(train_prop*length(ids_train))
   
-  split_pers <- lapply(markers, function(m) {
-    sample(pers_train, size = n_pers_train)
+  split_ids <- lapply(markers, function(m) {
+    sample(ids_train, size = n_ids_train)
   })
-  names(split_pers) <- markers
+  names(split_ids) <- markers
   # Doing the splitting and combining
   
-  df_train1 <- lapply(names(split_pers), function(m) {
-    df_train1 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+  df_train1 <- lapply(names(split_ids), function(m) {
+    df_train1 |> filter(ID %in% split_ids[[m]], Target.ID == m)
   }) |> bind_rows()
-  df_test1 <- lapply(names(split_pers), function(m) {
-    df_test1 |> filter(!(Person %in% split_pers[[m]]), Target.ID == m)
+  df_test1 <- lapply(names(split_ids), function(m) {
+    df_test1 |> filter(!(ID %in% split_ids[[m]]), Target.ID == m)
   }) |> bind_rows()
   
   #------------------------#
@@ -1237,19 +1105,19 @@ cross_val_create_custom_all <- function(df, dils_train, dils_test,
   #------------------------#
   # Repeat same steps as for the first dilution series:
   markers <- unique(c(df_train2$Target.ID, df_test2$Target.ID))
-  pers_train <- unique(df_train2$Person)
-  n_pers_train <- floor(train_prop*length(pers_train))
+  ids_train <- unique(df_train2$ID)
+  n_ids_train <- floor(train_prop*length(ids_train))
   
-  split_pers <- lapply(markers, function(m) {
-    sample(pers_train, size = n_pers_train)
+  split_ids <- lapply(markers, function(m) {
+    sample(ids_train, size = n_ids_train)
   })
-  names(split_pers) <- markers
+  names(split_ids) <- markers
   
-  df_train2 <- lapply(names(split_pers), function(m) {
-    df_train2 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+  df_train2 <- lapply(names(split_ids), function(m) {
+    df_train2 |> filter(ID %in% split_ids[[m]], Target.ID == m)
   }) |> bind_rows()
-  df_test2 <- lapply(names(split_pers), function(m) {
-    df_test2 |> filter(!(Person %in% split_pers[[m]]), Target.ID == m)
+  df_test2 <- lapply(names(split_ids), function(m) {
+    df_test2 |> filter(!(ID %in% split_ids[[m]]), Target.ID == m)
   }) |> bind_rows()
   
   # Combining dilution both serie
@@ -1270,32 +1138,32 @@ cross_val_create_custom_all <- function(df, dils_train, dils_test,
   N_test <- nrow(df_test)
   
   df_test <- df_test |> mutate(Genotype_EQC = threshold_rule(df_test))
-  HID_NN <- sum(df_test$Genotype == no_call)
-  HID_WC <- sum(df_test$Genotype != no_call & df_test$Genotype != df_test$Genotype_true)
+  HSG_NN <- sum(df_test$Genotype == no_call)
+  HSG_WC <- sum(df_test$Genotype != no_call & df_test$Genotype != df_test$Genotype_true)
   EQC_NN <- sum(df_test$Genotype_EQC == no_call)
   EQC_WC <- sum(df_test$Genotype_EQC != no_call & df_test$Genotype_EQC != df_test$Genotype_true)
   
-  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HID_NN" = HID_NN, "HID_WC" = HID_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
+  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HSG_NN" = HSG_NN, "HSG_WC" = HSG_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
 }
 
 
 #-------------------------------------------------------------------------------#
 # Version where all data is used for test, when fit and test dils are different #
 #-------------------------------------------------------------------------------#
-cross_val_create_custom2 <- function(df, n_pers_train, dils_train, dils_test,
+cross_val_create_custom2 <- function(df, n_ids_train, dils_train, dils_test,
                                      f=f_vst, intercept=T, b_int=c(0,1,-2),
                                      method="Nelder-Mead", hessian=F, control_list=list(maxit = 500)) {
-  # We will loop trough each marker and sample n_pers_train SNPs within each
-  # marker for the training data. This is done by sampling n_pers_train individuals,
+  # We will loop trough each marker and sample n_ids_train SNPs within each
+  # marker for the training data. This is done by sampling n_ids_train individuals,
   # but for each marker we will use the same set of individuals for all dilutions
   # in order to resemble a dilution series.
-  # In this way, we use the original data as a template to put together n_pers_train new SNP profiles.
+  # In this way, we use the original data as a template to put together n_ids_train new SNP profiles.
   # If the train data uses dilutions from different series, the individuals will be different, so
-  # we can't use the same n_pers_train for all dilutions, but have to use two sets of n_pers_train
+  # we can't use the same n_ids_train for all dilutions, but have to use two sets of n_ids_train
   # individuals for each dilution series.
-  # If df has several runs for the same person (and same dilution), then we will
-  # treat the runs as independent, i.e. simply consider a new run as new persons
-  # by e.g. interaction(Run, Person), which have to be done before using this function,
+  # If df has several runs for the same individual (and same dilution), then we will
+  # treat the runs as independent, i.e. simply consider a new run as new individuals
+  # by e.g. interaction(Run, ID), which have to be done before using this function,
   # i.e. the dataframe used in the 'df'-argument of this function has to contain this interaction().
   df_train1 <- filter(df, Dilution %in% c(1000, 500, 250, 125, 62.5, 31.25), Dilution %in% dils_train)
   df_test1 <- filter(df, Dilution %in% c(1000, 500, 250, 125, 62.5, 31.25), Dilution %in% dils_test)
@@ -1314,28 +1182,28 @@ cross_val_create_custom2 <- function(df, n_pers_train, dils_train, dils_test,
     #-----------------------#
     # Finding the random split for each marker
     markers <- unique(df_train1$Target.ID)
-    pers_train <- unique(df_train1$Person)
+    ids_train <- unique(df_train1$ID)
     # The overlap should be removed from df_trainx and df_testx, because it has
     # to be randomly split between these sets:
     df_train1 <- df_train1 |> filter(!(Dilution %in% common_dils))
     df_test1 <- df_test1 |> filter(!(Dilution %in% common_dils))
-    split_pers <- lapply(markers, function(m) {
-      sample(pers_train, size = n_pers_train)
+    split_ids <- lapply(markers, function(m) {
+      sample(ids_train, size = n_ids_train)
     })
-    names(split_pers) <- markers
+    names(split_ids) <- markers
     # Doing the splitting and combining
     # (remembering that the same individuals should also be used to split the
     # non-overlapping training data, while all of the non-overlapping test data
     # should NOT be split, since it is already out-of-sample data)
-    df_train1_c <- lapply(names(split_pers), function(m) {
-      df_c1 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+    df_train1_c <- lapply(names(split_ids), function(m) {
+      df_c1 |> filter(ID %in% split_ids[[m]], Target.ID == m)
     }) |> bind_rows()
-    df_train1 <- lapply(names(split_pers), function(m) {
-      df_train1 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+    df_train1 <- lapply(names(split_ids), function(m) {
+      df_train1 |> filter(ID %in% split_ids[[m]], Target.ID == m)
     }) |> bind_rows() |> bind_rows(df_train1_c)
     
-    df_test1 <- df_test1 |> bind_rows(lapply(names(split_pers), function(m) {
-      df_c1 |> filter(!(Person %in% split_pers[[m]]), Target.ID == m)
+    df_test1 <- df_test1 |> bind_rows(lapply(names(split_ids), function(m) {
+      df_c1 |> filter(!(ID %in% split_ids[[m]]), Target.ID == m)
     }) |> bind_rows())
     
     #------------------------#
@@ -1343,24 +1211,24 @@ cross_val_create_custom2 <- function(df, n_pers_train, dils_train, dils_test,
     #------------------------#
     # Repeat same steps as for the first dilution series:
     markers <- unique(df_train2$Target.ID)
-    pers_train <- unique(df_train2$Person)
+    ids_train <- unique(df_train2$ID)
     
     df_train2 <- df_train2 |> filter(!(Dilution %in% common_dils))
     df_test2 <- df_test2 |> filter(!(Dilution %in% common_dils))
-    split_pers <- lapply(markers, function(m) {
-      sample(pers_train, size = n_pers_train)
+    split_ids <- lapply(markers, function(m) {
+      sample(ids_train, size = n_ids_train)
     })
-    names(split_pers) <- markers
+    names(split_ids) <- markers
     
-    df_train2_c <- lapply(names(split_pers), function(m) {
-      df_c2 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+    df_train2_c <- lapply(names(split_ids), function(m) {
+      df_c2 |> filter(ID %in% split_ids[[m]], Target.ID == m)
     }) |> bind_rows()
-    df_train2 <- lapply(names(split_pers), function(m) {
-      df_train2 |> filter(Person %in% split_pers[[m]], Target.ID == m)
+    df_train2 <- lapply(names(split_ids), function(m) {
+      df_train2 |> filter(ID %in% split_ids[[m]], Target.ID == m)
     }) |> bind_rows() |> bind_rows(df_train2_c)
     
-    df_test2 <- df_test2 |> bind_rows(lapply(names(split_pers), function(m) {
-      df_c2 |> filter(!(Person %in% split_pers[[m]]), Target.ID == m)
+    df_test2 <- df_test2 |> bind_rows(lapply(names(split_ids), function(m) {
+      df_c2 |> filter(!(ID %in% split_ids[[m]]), Target.ID == m)
     }) |> bind_rows())
     
     
@@ -1375,18 +1243,18 @@ cross_val_create_custom2 <- function(df, n_pers_train, dils_train, dils_test,
     # complement of the split shouldn't be transferred to the test data.
     if (nrow(df_train1) > 0) {
       markers <- unique(df_train1$Target.ID)
-      pers_train <- unique(df_train1$Person)
+      ids_train <- unique(df_train1$ID)
       lapply(markers, function(m) {
-        pers_for_train <- sample(pers_train, size = n_pers_train)
-        return(df_train1 |> filter(Person %in% pers_for_train, Target.ID == m))
+        ids_for_train <- sample(ids_train, size = n_ids_train)
+        return(df_train1 |> filter(ID %in% ids_for_train, Target.ID == m))
       }) |> bind_rows()
     }
     if (nrow(df_train2) > 0) {
       markers <- unique(df_train2$Target.ID)
-      pers_train <- unique(df_train2$Person)
+      ids_train <- unique(df_train2$ID)
       lapply(markers, function(m) {
-        pers_for_train <- sample(pers_train, size = n_pers_train)
-        return(df_train2 |> filter(Person %in% pers_for_train, Target.ID == m))
+        ids_for_train <- sample(ids_train, size = n_ids_train)
+        return(df_train2 |> filter(ID %in% ids_for_train, Target.ID == m))
       }) |> bind_rows()
     }
     
@@ -1408,33 +1276,33 @@ cross_val_create_custom2 <- function(df, n_pers_train, dils_train, dils_test,
   N_test <- nrow(df_test)
   
   df_test <- df_test |> mutate(Genotype_EQC = threshold_rule(df_test))
-  HID_NN <- sum(df_test$Genotype == no_call)
-  HID_WC <- sum(df_test$Genotype != no_call & df_test$Genotype != df_test$Genotype_true)
+  HSG_NN <- sum(df_test$Genotype == no_call)
+  HSG_WC <- sum(df_test$Genotype != no_call & df_test$Genotype != df_test$Genotype_true)
   EQC_NN <- sum(df_test$Genotype_EQC == no_call)
   EQC_WC <- sum(df_test$Genotype_EQC != no_call & df_test$Genotype_EQC != df_test$Genotype_true)
   
-  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HID_NN" = HID_NN, "HID_WC" = HID_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
+  return(list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]], "N_train"=N_train, "N_test"=N_test, "HSG_NN" = HSG_NN, "HSG_WC" = HSG_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
 }
 
 
 #--------------------------------------#
 # Version collecting all models in one #
 #--------------------------------------#
-cross_val_create_custom3 <- function(df, n_pers_train, dils_train, dils_test,
+cross_val_create_custom3 <- function(df, n_ids_train, dils_train, dils_test,
                                     method="Nelder-Mead", hessian=F, control_list=list(maxit = 500)) {
-  # If df has several runs for the same person (and same dilution), then we will
-  # treat the runs as independent, i.e. simply consider a new run as new persons
-  # by e.g. interaction(Run, Person)
+  # If df has several runs for the same individual (and same dilution), then we will
+  # treat the runs as independent, i.e. simply consider a new run as new individuals
+  # by e.g. interaction(Run, ID)
   if (sum(dils_train %in% dils_test) > 0) {
     common_dils <- dils_train[dils_train %in% dils_test]
     dd_traintest <- lapply(common_dils, function(c_dil) {
       dd_overlap <- df |> filter(Dilution == c_dil)
       markers <- unique(dd_overlap$Target.ID)
-      pers_train <- unique(dd_overlap$Person)
+      ids_train <- unique(dd_overlap$ID)
       lapply(markers, function(m) {
-        pers_for_train <- sample(pers_train, size = n_pers_train)
-        d_train <- dd_overlap |> filter(Person %in% pers_for_train, Target.ID == m)
-        d_test <- dd_overlap |> filter(!(Person %in% pers_for_train), Target.ID == m)
+        ids_for_train <- sample(ids_train, size = n_ids_train)
+        d_train <- dd_overlap |> filter(ID %in% ids_for_train, Target.ID == m)
+        d_test <- dd_overlap |> filter(!(ID %in% ids_for_train), Target.ID == m)
         return(list("Train" = d_train, "Test" = d_test))
       })
     })
@@ -1445,10 +1313,10 @@ cross_val_create_custom3 <- function(df, n_pers_train, dils_train, dils_test,
     dd_train <- lapply(setdiff(dils_train, common_dils), function(dil) {
       d_train <- df |> filter(Dilution == dil)
       markers <- unique(d_train$Target.ID)
-      pers_train <- unique(d_train$Person)
+      ids_train <- unique(d_train$ID)
       lapply(markers, function(m) {
-        pers_for_train <- sample(pers_train, size = n_pers_train)
-        return(d_train |> filter(Person %in% pers_for_train, Target.ID == m))
+        ids_for_train <- sample(ids_train, size = n_ids_train)
+        return(d_train |> filter(ID %in% ids_for_train, Target.ID == m))
       }) |> bind_rows()
     }) |> bind_rows()
     
@@ -1472,10 +1340,10 @@ cross_val_create_custom3 <- function(df, n_pers_train, dils_train, dils_test,
     dd_train <- lapply(dils_train, function(dil) {
       dd_train <- df |> filter(Dilution == dil)
       markers <- unique(dd_train$Target.ID)
-      pers_train <- unique(dd_train$Person)
+      ids_train <- unique(dd_train$ID)
       lapply(markers, function(m) {
-        pers_for_train <- sample(pers_train, size = n_pers_train)
-        return(dd_train |> filter(Person %in% pers_for_train, Target.ID == m))
+        ids_for_train <- sample(ids_train, size = n_ids_train)
+        return(dd_train |> filter(ID %in% ids_for_train, Target.ID == m))
       }) |> bind_rows()
     }) |> bind_rows()
     
@@ -1503,8 +1371,8 @@ cross_val_create_custom3 <- function(df, n_pers_train, dils_train, dils_test,
   N_test <- nrow(dd_test)
   
   dd_test2 <- dd_test |> mutate(Genotype_EQC = threshold_rule(dd_test))
-  HID_NN <- sum(dd_test2$Genotype == no_call)
-  HID_WC <- sum(dd_test2$Genotype != no_call & dd_test2$Genotype != dd_test2$Genotype_true)
+  HSG_NN <- sum(dd_test2$Genotype == no_call)
+  HSG_WC <- sum(dd_test2$Genotype != no_call & dd_test2$Genotype != dd_test2$Genotype_true)
   EQC_NN <- sum(dd_test2$Genotype_EQC == no_call)
   EQC_WC <- sum(dd_test2$Genotype_EQC != no_call & dd_test2$Genotype_EQC != dd_test2$Genotype_true)
   
@@ -1585,7 +1453,7 @@ cross_val_create_custom3 <- function(df, n_pers_train, dils_train, dils_test,
   
   l_id <- list("fit"=m, "p_WC"=p_WC[[1]], "p_NN"=p_NN[[1]])
   
-  return(list("Sqrt_NI" = l_sqrt_NI, "Sqrt" = l_sqrt, "Log_NI" = l_log_NI, "Log" = l_log, "Id_NI" = l_id_NI, "Id" = l_id, "N_train"=N_train, "N_test"=N_test, "HID_NN" = HID_NN, "HID_WC" = HID_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
+  return(list("Sqrt_NI" = l_sqrt_NI, "Sqrt" = l_sqrt, "Log_NI" = l_log_NI, "Log" = l_log, "Id_NI" = l_id_NI, "Id" = l_id, "N_train"=N_train, "N_test"=N_test, "HSG_NN" = HSG_NN, "HSG_WC" = HSG_WC, "EQC_NN" = EQC_NN, "EQC_WC" = EQC_WC))
 }
 
 

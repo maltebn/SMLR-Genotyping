@@ -91,7 +91,7 @@ min_max_ratio <- function(A1.Reads, A2.Reads){
 dd_GT <- bind_cols(dd_GT, min_max_ratio(dd_GT$A1.Reads, dd_GT$A2.Reads))
 ```
 
-```{r True profiles, include=FALSE}
+```{r True profiles}
 examin_all_ID <- split(dd_GT, f = interaction(dd_GT$Dilution, dd_GT$Run))
 # Removing cases with incomplete profiles
 examin_all_ID <- examin_all_ID[sapply(examin_all_ID, FUN = function(x) {nrow(x) == length(unique(dd_GT$ID))*length(unique(dd_GT$Target.ID))})]
