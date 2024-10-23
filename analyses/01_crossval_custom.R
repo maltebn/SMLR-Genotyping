@@ -113,31 +113,31 @@ dd_dils_FSIGEN_h <- list(list("dil_train" = c(250, 125, 62.5), "dil_test" = c(25
 for (dil_range in c("low", "high")) {
   
 
-for (vst in c("_sqrt_", "_log_", "_I_")) {
-  BI <- c(0, 1, -2)
-  if (vst == "_sqrt_") {
-    f_vs <- sqrt
-  } else if (vst == "_log_") {
-    f_vs <- function(x) {log(x+1)}
-  } else if (vst == "_I_") {
-    BI <- c(0, 0, -1)
-    f_vs <- function(x) {x}
+for (vst in c("sqrt", "log", "I")) {
+  initial_beta <- c(0, 1, -2)
+  if (vst == "sqrt") {
+    f_vst <- sqrt
+  } else if (vst == "log") {
+    f_vst <- function(x) log(x+1)
+  } else if (vst == "I") {
+    initial_beta <- c(0, 0, -1)
+    f_vst <- function(x) x
   }
   for (INT in c(T, F)) {
-    I_NI <- ""
+    I_NI <- "_"
     if (!INT) {
-      BI <- BI[-1]
-      I_NI <- "NI"
+      initial_beta <- initial_beta[-1]
+      I_NI <- "_NI_"
     }
     if (dil_range == "low") {
-      filename <- paste0("01_obj_crossval_C", vst, I_NI, "1K_9individuals_low.rds")
+      filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_low.rds")
       dd_dils_FSIGEN <- dd_dils_FSIGEN_l
     } else if (dil_range == "high") {
-      filename <- paste0("01_obj_crossval_C", vst, I_NI, "1K_9individuals_high.rds")
+      filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_high.rds")
       dd_dils_FSIGEN <- dd_dils_FSIGEN_h
     }
-    # filename <- paste0("01_obj_crossval_C", vst, I_NI, "1K_9individuals_low_high_all.rds")
-    # filename <- paste0("01_obj_crossval_C", vst, I_NI, "1K_9individuals_extreme.rds")
+    # filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_low_high_all.rds")
+    # filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_extreme.rds")
     gc()
 
     
@@ -146,7 +146,7 @@ for (vst in c("_sqrt_", "_log_", "_I_")) {
       cross_val_create_custom(dd_GT_both,
       # cross_val_create_custom_all(dd_GT_both,
                               dils_train = d$dil_train, dils_test = d$dil_test,
-                              f=f_vs, intercept=INT, b_int=BI, train_prop=train_proportion,
+                              f=f_vst, intercept=INT, b_int=initial_beta, train_prop=train_proportion,
                               method="Nelder-Mead", hessian=F, control_list=list(maxit = 500))
     })
   }, future.seed = 1913, future.scheduling = 1)
