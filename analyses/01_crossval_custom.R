@@ -7,7 +7,6 @@ plan(multisession, workers = workers)
 
 reps <- 10^3
 train_proportion <- 9/12
-set.seed(123)
 
 
 dd_GT <- readRDS(file.path("..", "data", "00_dd_GT.rds"))
@@ -104,8 +103,56 @@ dd_dils_FSIGEN_h <- list(list("dil_train" = c(250, 125, 62.5), "dil_test" = c(25
 #                 list("dil_train" = c(50, 25), "dil_test" = c(50, 31.25)))
 
 dd_dils_FSIGEN_lh <- list(list("dil_train" = c(50, 25), "dil_test" = c(50, 31.25)),
-                     list("dil_train" = c(50, 25), "dil_test" = c(250, 125, 62.5)),
-                     list("dil_train" = c(50, 25), "dil_test" = c(1000, 500)))
+                          list("dil_train" = c(50, 25), "dil_test" = c(250, 125, 62.5)),
+                          list("dil_train" = c(50, 25), "dil_test" = c(1000, 500)))
+
+
+# The objects dd_dils_FSIGEN_l, dd_dils_FSIGEN_h, and dd_dils_FSIGEN_lh contain
+# sets of DNA amounts for which the corresponding data is used for fitting and
+# testing of the models. The two first of these objects point at the same sets
+# of fitting data (and are thus of the same length). The last of the three
+# objects points at a pair of fitting and testing data from each of the two
+# first objects (the fourth element in both objects), but it also points at an
+# additional pair of fitting and testing data.
+# For each pair of fitting and testing data, we want to run a cross-validation.
+# Different pairs of fitting and testing data should be run as independent
+# cross-validations by using different future.seeds.
+# Since the object dd_dils_FSIGEN_lh has two pairs of fitting and testing data
+# in common with dd_dils_FSIGEN_l and dd_dils_FSIGEN_h, these two pairs should
+# have the same seeds as their corresponding matches in the other two objects, i.e.
+# they are to be run as identical cross-validations, but as variants where ALL
+# probability estimates for the test data are saved, not just the probability
+# estimates for the points with estimated values lower than the highest WC (this
+# makes the objects MUCH larger in size, which is why we only do it for selected
+# pairs of fitting and testing data).
+# Since we need a seed for each different pair, and dd_dils_FSIGEN_l has the same
+# length as dd_dils_FSIGEN_h, while dd_dils_FSIGEN_lh only has one pair which isn't
+# present in dd_dils_FSIGEN_l and dd_dils_FSIGEN_h, we need the number of seeds
+# specified below:
+set.seed(1914)
+s_l <- sample.int(10^6, size=length(dd_dils_FSIGEN_l))
+s_h <- sample.int(10^6, size=length(dd_dils_FSIGEN_h))
+s_lh <- c(s_l[4], s_h[4], sample.int(10^6, size=1))
+
+# Note: you have to call plan(multisession, workers = workers) before
+# future_lapply() will work correctly, and thus also before the generation of
+# the future_seeds below (forgetting to set up a plan may result in an identical
+# seed being used in all parallel sessions of future_lapply()).
+future_seeds_l <- lapply(s_l, function(s) {
+  future_lapply(seq_len(reps), FUN = function(x) {
+    .Random.seed
+  }, future.chunk.size = Inf, future.seed = s)
+})
+future_seeds_h <- lapply(s_h, function(s) {
+  future_lapply(seq_len(reps), FUN = function(x) {
+    .Random.seed
+  }, future.chunk.size = Inf, future.seed = s)
+})
+future_seeds_lh <- lapply(s_lh, function(s) {
+  future_lapply(seq_len(reps), FUN = function(x) {
+    .Random.seed
+  }, future.chunk.size = Inf, future.seed = s)
+})
 
 
 for (dil_range in c("low", "high", "all")) {
@@ -131,13 +178,16 @@ for (dil_range in c("low", "high", "all")) {
       if (dil_range == "low") {
         filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_low.rds")
         dd_dils_FSIGEN <- dd_dils_FSIGEN_l
+        future_seeds <- future_seeds_l
       } else if (dil_range == "high") {
         filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_high.rds")
         dd_dils_FSIGEN <- dd_dils_FSIGEN_h
+        future_seeds <- future_seeds_h
       } else if (dil_range == "all") {
         filename <- paste0("01_obj_crossval_", vst, I_NI, "1K_9individuals_low_high_all.rds")
         dd_dils_FSIGEN <- dd_dils_FSIGEN_lh
         cv_fun <- cross_val_create_custom_all
+        future_seeds <- future_seeds_lh
         # NOTE: the difference between cross_val_create_custom() and cross_val_create_custom_all()
         # is that the latter contains ALL probability estimates for the test data, not just
         # the probability estimates for the points with estimated values lower than the highest WC.
@@ -147,14 +197,18 @@ for (dil_range in c("low", "high", "all")) {
       gc()
       
       
-      dd_val_dils <- future_lapply(1:reps, function(x) {
-        lapply(dd_dils_FSIGEN, function(d) {
+      dd_val_dils <- lapply(seq_along(dd_dils_FSIGEN), function(i) {
+        d <- dd_dils_FSIGEN[[i]]
+        future_lapply(1:reps, function(x) {
+      # dd_val_dils <- future_lapply(1:reps, function(x) {
+        # lapply(dd_dils_FSIGEN, function(d) {
           cv_fun(dd_GT_both,
                  dils_train = d$dil_train, dils_test = d$dil_test,
                  f=f_vst, intercept=INT, b_int=initial_beta, train_prop=train_proportion,
                  method="Nelder-Mead", hessian=F, control_list=list(maxit = 500))
-        })
-      }, future.seed = 1913, future.scheduling = 1)
+        # })
+        }, future.seed = future_seeds[[i]], future.scheduling = 1)
+      })
       
       dd_val_dils <- sapply(1:length(dd_dils_FSIGEN), function(i) {
         lapply(dd_val_dils, function(x) x[[i]])

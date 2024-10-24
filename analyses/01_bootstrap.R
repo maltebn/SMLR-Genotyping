@@ -40,7 +40,7 @@ for (vst in c("sqrt", "log", "I")) {
     }
     
     dd_boot_fine <- lapply(seq_along(dils), function(i) {
-      dd_GT_2nd |> filter(Dilution %in% dils[i]) |> 
+      dd_GT_2nd |> filter(Dilution %in% dils[[i]]) |> 
         dd_boot_create_samplesize(reps, stratify = "Marker",
                                   f=vst, INT=intercept, b_int = initial_beta,
                                   method = "Nelder-Mead",
