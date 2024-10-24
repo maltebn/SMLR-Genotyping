@@ -200,19 +200,11 @@ for (dil_range in c("low", "high", "all")) {
       dd_val_dils <- lapply(seq_along(dd_dils_FSIGEN), function(i) {
         d <- dd_dils_FSIGEN[[i]]
         future_lapply(1:reps, function(x) {
-      # dd_val_dils <- future_lapply(1:reps, function(x) {
-        # lapply(dd_dils_FSIGEN, function(d) {
-          cv_fun(dd_GT_both,
-                 dils_train = d$dil_train, dils_test = d$dil_test,
+          cv_fun(dd_GT_both, dils_train = d$dil_train, dils_test = d$dil_test,
                  f=f_vst, intercept=INT, b_int=initial_beta, train_prop=train_proportion,
                  method="Nelder-Mead", hessian=F, control_list=list(maxit = 500))
-        # })
         }, future.seed = future_seeds[[i]], future.scheduling = 1)
       })
-      
-      dd_val_dils <- sapply(1:length(dd_dils_FSIGEN), function(i) {
-        lapply(dd_val_dils, function(x) x[[i]])
-      }, simplify = FALSE)
       
       names(dd_val_dils) <- sapply(dd_dils_FSIGEN, function(d) {
         paste0("Train = ", paste0(d$dil_train, collapse = ", "), ", ", "Test = ", paste0(d$dil_test, collapse = ", "))
