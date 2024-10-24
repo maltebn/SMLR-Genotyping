@@ -39,7 +39,7 @@ for (vst in c("sqrt", "log", "I")) {
       bootstrap_name <- paste0("01_obj_bootstrap_", vst, "_NI")
     }
     
-    dd_boot_fine <- lapply(1:length(dils), function(i) {
+    dd_boot_fine <- lapply(seq_along(dils), function(i) {
       dd_GT_2nd |> filter(Dilution %in% dils[i]) |> 
         dd_boot_create_samplesize(reps, stratify = "Marker",
                                   f=vst, INT=intercept, b_int = initial_beta,
