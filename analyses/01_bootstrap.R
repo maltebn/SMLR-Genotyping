@@ -44,7 +44,7 @@ for (vst in c("sqrt", "log", "I")) {
         dd_boot_create_samplesize(reps, stratify = "Marker",
                                   f=vst, INT=intercept, b_int = initial_beta,
                                   method = "Nelder-Mead",
-                                  control_list = list(maxit = 10^3, reltol=sqrt(.Machine$double.eps)), seeds = future_seeds[i])
+                                  control_list = list(maxit = 10^3, reltol=sqrt(.Machine$double.eps)), seeds = future_seeds[[i]])
     })
     
     dd_boot_fine <- dd_boot_fine |> 
