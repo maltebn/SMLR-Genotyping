@@ -719,7 +719,7 @@ plot_model <- function(intercept_model=NULL, NI_model=NULL, df, q = t_q, predict
 dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
                                       seq_start=1, seq_end=F,
                                       b_int=c(0,1,-2), method="Nelder-Mead", control_list=list(maxit=500),
-                                      stratify="Marker", seed=F) {
+                                      stratify="Marker", seeds=F) {
   if (fun == "sqrt") {
     f <- function(x) sqrt(x)
   } else if (fun == "log") {
@@ -792,7 +792,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         
         return(m)
       })
-    }, future.seed = seed, future.scheduling = 1)
+    }, future.seed = seeds, future.scheduling = 1)
   } else if (is.numeric(stratify)) {
     df_het <- filter(df, Genotype_true == "A1A2")
     df_hom <- filter(df, Genotype_true != "A1A2")
@@ -833,7 +833,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         
         return(m)
       })
-    }, future.seed = seed, future.scheduling = 1)
+    }, future.seed = seeds, future.scheduling = 1)
   } else {
     future_lapply(1:repititions, function(x){
       lapply(ss, function(s){
@@ -853,7 +853,7 @@ dd_boot_create_samplesize <- function(df, repititions, fun="sqrt", INT=TRUE,
         
         return(m)
       })
-    }, future.seed = seed, future.scheduling = 1)
+    }, future.seed = seeds, future.scheduling = 1)
   }
 }
 

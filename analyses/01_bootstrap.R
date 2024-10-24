@@ -14,7 +14,12 @@ true_profiles_2nd <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds")
 
 dils <- list(50, c(50, 25), 25, 12.5, 6.25)
 set.seed(1913)
-seeds <- sample(1:1000, size=length(dils))
+global_seeds <- sample.int(10^6, size=length(dils))
+future_seeds <- lapply(global_seeds, function(s) {
+  future_lapply(seq_len(reps), FUN = function(x) {
+    .Random.seed
+  }, future.chunk.size = Inf, future.seed = s)
+})
 
 for (vst in c("sqrt", "log", "I")) {
   if (vst == "I") {
@@ -30,12 +35,12 @@ for (vst in c("sqrt", "log", "I")) {
       bootstrap_name <- paste0("01_obj_bootstrap_", vst, "_NI")
     }
     
-    dd_boot_fine <- lapply(dils, function(d) {
-      dd_GT_2nd |> filter(Dilution %in% d) |> 
+    dd_boot_fine <- lapply(1:length(dils), function(i) {
+      dd_GT_2nd |> filter(Dilution %in% dils[i]) |> 
         dd_boot_create_samplesize(reps, stratify = "Marker",
                                   f=vst, INT=intercept, b_int = initial_beta,
                                   method = "Nelder-Mead",
-                                  control_list = list(maxit = 10^3, reltol=sqrt(.Machine$double.eps)), seed = seeds)
+                                  control_list = list(maxit = 10^3, reltol=sqrt(.Machine$double.eps)), seeds = future_seeds[i])
     })
     
     dd_boot_fine <- dd_boot_fine |> 
