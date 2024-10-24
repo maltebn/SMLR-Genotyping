@@ -15,6 +15,10 @@ true_profiles_2nd <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds")
 dils <- list(50, c(50, 25), 25, 12.5, 6.25)
 set.seed(1913)
 global_seeds <- sample.int(10^6, size=length(dils))
+# Note: you have to call plan(multisession, workers = workers) before
+# future_lapply() will work correctly, and thus also before the generation of
+# the future_seeds below (forgetting to set up a plan may result in an identical
+# seed being used in all parallel sessions of future_lapply()).
 future_seeds <- lapply(global_seeds, function(s) {
   future_lapply(seq_len(reps), FUN = function(x) {
     .Random.seed
