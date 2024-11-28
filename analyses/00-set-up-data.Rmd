@@ -1,0 +1,290 @@
+---
+title: "Set up data"
+author: "Corresponding author"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	echo=FALSE
+)
+```
+
+```{r Loading libraries, message=FALSE, include=FALSE}
+library(tidyverse)
+source(file.path("..", "analyses", "00_functions_and_global_definitions.R"))
+```
+
+```{r Loading data from first DNA dilution series, message=FALSE, include=FALSE}
+# Existing genotypes for each of the rs-names:
+gt_possible <- read_table(file.path("..", "data", "Alleles165AIMS.txt"))
+
+data_location <- file.path("..", "data", "first-dilution-series")
+data_names <- paste0("Auto_user_HEL-", 21:24, "-Fortyndingsforsog_F1", c("A", "B"),
+                     c("_Pool_25pM_","_Pool_25_pM_","_35pM_", "_35pM_"),
+                     c(70:71, 73:74), "_hid_allele_counts.csv")
+names(data_names) <- LETTERS[1:(length(data_names))]
+
+# The data sets come in pairs, i.e. indices (1,2) and  (3,4) in data_names
+# belong together. However, it is the same individuals in all of the data sets, so
+# in principle all six sets could be pooled together.
+dd <- lapply(data_names, FUN = function(x) read_csv(file.path(data_location, x))) %>% 
+  bind_rows(.id = "Run") %>% 
+  select(!c("BarcodeName", "HotSpot ID")) %>% # We remove the variable BarcodeName
+  separate(col = SampleName,                  # since its information seems to be
+           into = c("ID", "Sep1", "Dilution", "Sep2"), # contained in SampleName,
+           sep = c(-6,-2,-1)) %>%             # and we remove Hotspot ID since it
+           select(!c("Sep1", "Sep2")) %>%     # is identical with Target ID.
+           rename_with(~ gsub(" ", ".", .x)) %>%
+           mutate(across(Dilution, as.integer)) %>%
+           left_join(gt_possible, by = c(Target.ID = "rs-number")) %>% 
+  mutate(Dilution = if_else(Dilution == 1, 1000,
+                    if_else(Dilution == 2, 500,
+                    if_else(Dilution == 3, 250,
+                    if_else(Dilution == 4, 125,
+                    if_else(Dilution == 5, 62.5, 31.25))))))
+
+dd$ID <- as.factor(dd$ID)
+levels(dd$ID) <- paste0("ID", 1:length(unique(dd$ID)))
+```
+
+```{r Splitting data into possible genotypes (signal) and noise, message=FALSE, include=FALSE}
+dd_long <- dd %>% rename_with(.cols = ends_with(".Reads"),
+                              ~ gsub(".Reads", "", .x)) %>%
+  pivot_longer(cols = c("A", "C", "G", "T"),
+               names_to = "Channel",
+               values_to = "Reads") %>%
+  mutate(Possible = (Channel == A1 | Channel == A2))
+
+dd_split <- dd_long %>% split(dd_long$Possible)
+
+dd_GT <- dd_split[[2]] %>%
+  mutate(Read.Allele = if_else(Channel == A1, "A1.Reads", "A2.Reads")) %>%
+  pivot_wider(id_cols = c("ID", "Dilution", "Run", "Chrom", "Target.ID",
+                          "GQ", "Maj.Allele.Freq", "QC", "Pos.Cov", "Neg.Cov", "Perc.Pos.Cov",
+                          "Coverage", "Genotype", "A1", "A2"),
+              names_from = Read.Allele, values_from = Reads) %>% 
+  left_join(dd %>% select(Run, ID, Dilution, Target.ID, A.Reads, C.Reads, G.Reads, T.Reads), by = c("Run", "ID", "Dilution", "Target.ID"))
+
+min_max_ratio <- function(A1.Reads, A2.Reads){
+  df <- bind_cols(A1.Reads, A2.Reads)
+  names(df) <- c("A1.Reads", "A2.Reads")
+  df <- df %>% 
+    mutate(A.min = if_else(A1.Reads == 0 & A2.Reads == 0, "-",
+                   if_else(A1.Reads == A2.Reads, "A1",
+                   if_else(A1.Reads < A2.Reads, "A1", "A2")))) %>%
+    mutate(A.max = if_else(A1.Reads == 0 & A2.Reads == 0, "-",
+                   if_else(A1.Reads == A2.Reads, "A2",
+                   if_else(A1.Reads > A2.Reads, "A1", "A2")))) %>%
+    mutate(Ratio = ifelse(A.max == "-", NA,
+                   if_else(A.max == "A1", A2.Reads / A1.Reads, A1.Reads / A2.Reads))) %>% 
+    select(!c("A1.Reads", "A2.Reads"))
+    # Note: We want the variable Ratio to be the minimal reads divided by the
+    # maximal reads, but since A.min and A.max are of type chr with values "A1"
+    # and "A2", we must construct Ratio directly from the A1.Reads and A2.Reads.
+  return(df)
+}
+
+dd_GT <- bind_cols(dd_GT, min_max_ratio(dd_GT$A1.Reads, dd_GT$A2.Reads))
+```
+
+```{r True profiles}
+examin_all_ID <- split(dd_GT, f = interaction(dd_GT$Dilution, dd_GT$Run))
+# Removing cases with incomplete profiles
+examin_all_ID <- examin_all_ID[sapply(examin_all_ID, FUN = function(x) {nrow(x) == length(unique(dd_GT$ID))*length(unique(dd_GT$Target.ID))})]
+examin_all_ID <- examin_all_ID[sapply(examin_all_ID, FUN = function(x) {!any(x$Genotype == "NN" | x$Genotype == "-")})]
+
+# Comparing profiles from the examinations that only have complete profiles for all IDs
+nmatch <- vector(mode = "list", length(examin_all_ID))
+for (i in seq_along(examin_all_ID)) {
+  nmatch[[i]] <- sapply(examin_all_ID[-i], FUN = function(x) {all(x$Genotype == examin_all_ID[[i]]$Genotype)})
+}
+
+# The 'nmatch' object shows that all examinations in the Runs x Dilutions stored
+# in 'examin_all_ID' agree on the profile for each individual
+# Therefore, it is definitely fair to assume that these are the true profiles.
+# That is, any of the elements in 'examin_all_ID' can be used as the true profiles:
+true_profiles <- examin_all_ID[[1]] %>% 
+  mutate(Genotype_true = Genotype) %>% 
+  mutate(Genotype_true_AA = factor(case_when(Genotype == paste0(A1, A1) ~ "A1A1",
+                                             Genotype == paste0(A2, A2) ~ "A2A2",
+                                             .default = "A1A2"),
+                                   levels = c("A1A2", "A1A1", "A2A2"))) %>% 
+  select(ID, Target.ID, Genotype_true, Genotype_true_AA)
+
+dd_GT <- dd_GT %>% left_join(true_profiles, by = c("ID", "Target.ID"))
+
+dd_GT <- dd_GT %>% mutate(Het_hom_true = factor(if_else(Genotype_true_AA == "A1A2", "Het", "Hom"), levels = c("Het", "Hom")))
+
+dd_GT$min.Reads <- apply(select(dd_GT, A1.Reads, A2.Reads), MARGIN=1, FUN=min)
+dd_GT$max.Reads <- apply(select(dd_GT, A1.Reads, A2.Reads), MARGIN=1, FUN=max)
+```
+
+
+```{r Loading data from second DNA dilution series, include=FALSE}
+data_location <- file.path("..", "data", "second-dilution-series")
+
+# True profiles for second dilution series:
+# OBS: The first line of the file "TrueProfiles.txt" is
+# SampleName	Target ID	Replica 1
+# which can be wrongly understood as five column names
+# although we only have three variables.
+# Therefore, we skip the first line and define our own variable names:
+true_profiles_2nd <- read_table(file.path(data_location, "TrueProfiles.txt"),
+                                col_names = c("ID", "Target.ID", "Genotype_true"),
+                                skip = 1)
+# We see that the original TrueProfiles.txt has recorded a single NN among the true genotypes:
+# unique(true_profiles_2nd$Genotype_true)
+# sum(true_profiles_2nd$Genotype_true == "NN")
+# true_profiles_2nd %>% filter(Genotype_true == "NN")
+# We remove this line:
+true_profiles_2nd <- true_profiles_2nd %>% filter(Genotype_true != "NN")
+# Note: The object true_profiles has a variable named Genotype_true_AA, which we
+# can't construct in the same way for true_profiles_2nd, since it would require
+# access to the high-concentration data that TrueProfiles.txt was derived from.
+# (i.e. true_profiles was derived from the calls of the SNP HID genotyper on the
+# high concentration runs - calls that were identical for all four runs.)
+# We need to construct Genotype_true_AA by other means, since this is our
+# explained variable in the multinomial logistic regression.
+# From the way we arrange the reads, we know that AA and TT will always be A1A1
+# and A2A2, respectively, but a CC or a GG could be both (depends on rs-number).
+# For each rs-number, gt_possible tells us which bases belong to A1 and A2.
+# However, since A1A2 = A2A1, the only problem is to identify whether the
+# genotypes CC and GG should be A1A1 or A2A2.
+true_profiles_2nd <- true_profiles_2nd %>%
+  left_join(gt_possible, by = c("Target.ID" = "rs-number")) %>% 
+  mutate(Genotype_true_AA = if_else(Genotype_true %in% c("AC", "AG", "AT", "CG", "CT", "GT"), "A1A2",
+                            if_else(Genotype_true == "AA", "A1A1",
+                            if_else(Genotype_true == "TT", "A2A2",
+                            if_else(Genotype_true == paste0(A1, A1), "A1A1", "A2A2"))))) %>% 
+  select(ID, Target.ID, Genotype_true, Genotype_true_AA)
+
+saveRDS(true_profiles_2nd, file.path("..", "data", "00_true_profiles_2nd.rds"))
+
+# Validation data
+data_names <- paste0("Auto_user_KLING-", 121:124,
+                     rep(c("-Low_input_PCR_", "-Lav_Input_PCR_"), each=2),
+                     1:4, "_", c(306:307, 309:308), "_hid_allele_counts.csv")
+names(data_names) <- letters[1:(length(data_names))]
+
+# There is only one run per individual for the validation data, but for later analysis,
+# it can be useful to have a dataframe format that is consistent with the original
+# data with several runs, so we create a 'Run'-variable with just one level:
+dd_2nd <- lapply(data_names, FUN = function(x) read_csv(file.path(data_location, x))) |> 
+  bind_rows(.id = "Run") |> mutate(Run = "a")
+# Correcting a mistyped SampleName (Dilution).
+# The variable SampleName has the format ID_Dilution, and the validation
+# data contains the four dilutions 5pg, 2.5pg, 1.25pg, and 0.625pg.
+# In the file "Auto_user_KLING-122-Low_input_PCR_2_307_hid_allele_counts.csv",
+# there is a mistyped SampleName, namely "HOH_25" which should be "HOH_2.5".
+# We simply rename this instance below:
+dd_2nd$SampleName[dd_2nd$SampleName == "HOH_25"] <- "HOH_2.5"
+
+# Removing redundant variables and splitting SampleName into ID and Dilution
+dd_2nd <- dd_2nd %>% 
+  select(!c("BarcodeName", "HotSpot ID")) %>% # We remove the variable BarcodeName
+  separate(col = SampleName,                  # since its information is
+           into = c("ID", "Sep", "Dilution"), # contained in SampleName,
+           sep = 3:4) %>%             # and we remove Hotspot ID since it
+           select(!"Sep") %>%     # is identical with Target ID.
+           rename_with(~ gsub(" ", ".", .x)) %>%
+           left_join(gt_possible, by = c(Target.ID = "rs-number"))
+
+# The number in the SampleName relates to the dilution and should be translated
+# to the amount of DNA (pg).
+dd_2nd <- dd_2nd %>% 
+  mutate(Dilution = if_else(Dilution == "5", "50",
+                    if_else(Dilution == "2.5", "25",
+                    if_else(Dilution == "1.25", "12.5", "6.25")))) %>%
+  mutate(Dilution = as.numeric(Dilution))
+# The DNA-input for the dilutions above comes from the most recent SUMMARY.xlsx
+
+# Cleaning up some confusion in the individuals names.
+# In the original data-files, there are five ID names in the csv-files that
+# aren't in TrueProfiles.txt and vice versa
+# (Uncomment the two lines below to see these)
+# unique(dd_2nd$ID)[!(unique(dd_2nd$ID) %in% unique(true_profiles_2nd$ID))]
+# unique(true_profiles_2nd$ID)[!(unique(true_profiles_2nd$ID) %in% unique(dd_2nd$ID))]
+# There are two individuals in the csv-files for which we don't have the true
+# profiles ("CHH", "VKN") while there are two individuals in TrueProfiles.txt for
+# which we don't have diluted data ("VKR", "CLH").
+# Furthermore, there are two typos in the individuals' names from the csv-files where
+# the IDs ABO and SRL should have been ABU and SRS.
+# We will rename the two individuals with typos in their names:
+dd_2nd$ID[dd_2nd$ID == "ABO"] <- "ABU"
+dd_2nd$ID[dd_2nd$ID == "SRL"] <- "SRS"
+
+dd_long_val <- dd_2nd %>% rename_with(.cols = ends_with(".Reads"),
+                              ~ gsub(".Reads", "", .x)) %>%
+  pivot_longer(cols = c("A", "C", "G", "T"),
+               names_to = "Channel",
+               values_to = "Reads") %>%
+  mutate(Possible = (Channel == A1 | Channel == A2))
+  # filter(Coverage != 0) ##...We throw away data with coverage = 0...
+  # Vi skal ikke filtrere på coverage, men på A1.reads og A2.reads, for coverage
+  # er A.reads + C.reads + G.reads + T.reads, og denne kan godt være større end
+  # nul, selvom A1.reads + A2.reads er lig nul!!!
+  # Vi bruger en filter(A1.Reads != 0 & A2.Reads != 0) i senere chunk, da vi
+  # først vil undersøge hvordan dobbelt zero-reads afhænger af koncentrationen.
+
+dd_split_2nd <- dd_long_val %>% split(dd_long_val$Possible)
+
+dd_GT_2nd <- dd_split_2nd[[2]] %>%
+  mutate(Read.Allele = if_else(Channel == A1, "A1.Reads", "A2.Reads")) %>%
+  pivot_wider(id_cols = c("ID", "Dilution", "Run", "Chrom", "Target.ID",
+                          "GQ", "Maj.Allele.Freq", "QC", "Pos.Cov", "Neg.Cov", "Perc.Pos.Cov",
+                          "Coverage", "Genotype", "A1", "A2"),
+              names_from = Read.Allele, values_from = Reads) %>% 
+  left_join(dd_2nd %>% select(Run, ID, Dilution, Target.ID, A.Reads, C.Reads, G.Reads, T.Reads), by = c("Run", "ID", "Dilution", "Target.ID"))
+
+# Joining validation data and its true profiles by an inner join, since we shouldn't
+# create new rows if some markers from the true profiles are not present in the
+# validation data as this may give rise to "fake" wrong calls later.
+# Remember: inner_join(x,y) includes all rows in x AND y, while left_join will
+# add NA-entries if a row is present in x, but not in y.
+dd_GT_2nd <- dd_GT_2nd %>% 
+  bind_cols(min_max_ratio(dd_GT_2nd$A1.Reads, dd_GT_2nd$A2.Reads)) %>% 
+  inner_join(true_profiles_2nd, by = c("ID", "Target.ID"))
+```
+
+
+# Double zero-reads vs. dilution
+The $N$ tends to be smaller for the weaker concentrations.
+We do of course expect lower coverage and hence more double zero reads when the amount of DNA decreases, but the numbers below are for the *raw* data, i.e. *before* we filter away double zeros!
+This means that the raw data is *not* a full set of measurements, i.e. some (implicit) filtering has already been done on our raw data files.
+```{r Filtering away double zero-reads}
+# We throw away data with zero reads for the possible alleles.
+dd_GT <- dd_GT %>% 
+  filter(!(A1.Reads == 0 & A2.Reads == 0))
+
+dd_GT_2nd <- dd_GT_2nd %>% 
+  filter(!(A1.Reads == 0 & A2.Reads == 0))
+```
+
+# Renaming the original "NN"-tag for no-calls to "NC"
+In the article, we refer to no-calls as (NC).
+In order for plot functions to produce the NC-text instead of NN, we need to rename these in the data too.
+```{r}
+dd_GT <- dd_GT |> mutate(Genotype = if_else(Genotype == "NN", no_call, Genotype))
+dd_GT_2nd <- dd_GT_2nd |> mutate(Genotype = if_else(Genotype == "NN", no_call, Genotype))
+```
+
+```{r}
+saveRDS(dd_GT, file.path("..", "data", "00_dd_GT_all_loci.rds"))
+saveRDS(dd_GT_2nd, file.path("..", "data", "00_dd_GT_2nd_all_loci.rds"))
+```
+
+# Removal of three problematic loci
+The article "Evaluation of the Precision ID Ancestry Panel for crime case work: A SNP typing assay developed for typing of 165 ancestral informative markers" by Pereira et al. suggests to exclude rs459920, rs7251928, and rs7722456 from analyses.
+We follow that suggestion:
+```{r}
+dd_GT <- dd_GT |> filter(!(Target.ID %in% c("rs459920", "rs7251928", "rs7722456")))
+dd_GT_2nd <- dd_GT_2nd |> filter(!(Target.ID %in% c("rs459920", "rs7251928", "rs7722456")))
+
+saveRDS(dd_GT, file.path("..", "data", "00_dd_GT.rds"))
+saveRDS(dd_GT_2nd, file.path("..", "data", "00_dd_GT_2nd.rds"))
+```
+

@@ -1,0 +1,813 @@
+---
+title: "Accuracy and call rate vs. q"
+author: "Corresponding author"
+date: "2024-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggnewscale) # Enables multiple colour- and fill-scales
+library(latex2exp)
+library(patchwork)
+source("00_functions_and_global_definitions.R")
+
+# The palette with grey:
+cbp1 <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
+          "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot_title_size <- 7
+axis_title_size <- 7
+axis_ticks_size <- 7
+legend_title_size <- 7
+legend_text_size <- 7
+```
+
+```{r Reading data}
+dd_GT <- readRDS(file.path("..", "data", "00_dd_GT.rds"))
+dd_GT_2nd <- readRDS(file.path("..", "data", "00_dd_GT_2nd.rds"))
+true_profiles_2nd <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds"))
+# We will treat the different runs in dd_GT as independent, i.e. simply consider
+# a new run as new individuals which we encode by interaction(Run, ID, drop=T)
+dd_GT$ID <- interaction(dd_GT$ID, dd_GT$Run, drop = TRUE)
+
+dd_GT_both <- dd_GT_2nd |> bind_rows(dd_GT[names(dd_GT_2nd)])
+```
+
+## Scheme with the train data's list entrances (low range of DNA amounts)
+
+Letter |      Train     | Test (low)
+------ | -------------- | ----------
+A      | 250, 125, 62.5 | 50, 31.25
+B      | 50, 31.25      | 50, 31.25
+C      | 125, 25        | 50, 31.25
+D      | 50, 25         | 50, 31.25
+E      | 31.25, 25      | 50, 31.25
+F      | 50             | 50, 31.25
+G      | 31.25          | 50, 31.25
+H      | 25             | 50, 31.25
+I      | 1000           | 50, 31.25
+J      | 1000, 25       | 50, 31.25
+
+```{r}
+# NOTE: the name "...9individuals_low.rds" is a bit off now, since we don't sample nine
+# individuals for fitting, but 75% corresponding to 9 individual for 31.25pg,
+# but not in any other dilutions, where it will be more.
+
+# NOTE: the difference between the objects named
+# 01_obj_crossval_NI_1K_9individuals_low.rds
+# and
+# 01_obj_crossval_NI_1K_9individuals_low_all.rds
+# is that the latter contains ALL probability estimates for the test data, not just
+# the probability estimates for the points with estimated values lower than the highest WC.
+# This also makes the object much larger in size.
+# They are both created in 01_crossval_custom.R by commenting in and out the relevant lines.
+# dd_val_dils <- readRDS(file.path("..", "data", "01_obj_crossval_sqrt_NI_1K_9individuals_low_all.rds"))
+dd_val_dils <- readRDS(file.path("..", "data", "01_obj_crossval_sqrt_1K_9individuals_low_high_all.rds"))
+dd_val_dils <- dd_val_dils[1]
+names(dd_val_dils) <- "D"
+
+floor_dec <- function(x, level=1) round(x - 5*10^(-level-1), level)
+ceiling_dec <- function(x, level=1) round(x + 5*10^(-level-1), level)
+
+q_u <- 0.75
+q_l <- 0.25
+names_col <- c(paste0("Q", q_l*100), "Median", paste0("Q", q_u*100))
+```
+
+
+# LOW
+## Accuracy and call rate vs. q for the cv winner fit testing on low dilutions
+```{r}
+df_acc <- lapply(dd_val_dils$D, function(x) {
+  # Including all points from each of the 1000 cross-validation-iterations will
+  # give too huge a data frame, which isn't suited for fitting.
+  # We certainly want the q-values of the WCs and then the q-value immediately
+  # after the largest q for the WCs.
+  q <- c(x$p_WC, min(x$p_NN[x$p_NN > max(x$p_WC)]))
+  WC <- sapply(q, function(y) {sum(x$p_WC >= y)})
+  p_all <- c(x$p_WC, x$p_NN)
+  NC <- sapply(q, function(y) {sum(p_all < y)})
+  
+  q <- floor_dec(q, 4)
+  data.frame("q" = q,
+             "Accuracy" = ((x$N_test - WC - NC) / (x$N_test - NC))*100)
+}) |> bind_rows(.id = "Line") ##|> 
+  # mutate(Line = as.factor((80+(as.numeric(Line)-1)*(100-80)/(1000-1))/100))
+
+# In order to compute a sensible accuracy for each q-value, we make a sliding
+# window and extract the points with estimated probabilities in the vicinity of
+# each q-value, and then compute the max, min, and median for these points.
+qq <- seq(0.5, 1, 0.0005)
+acc <- matrix(NA, nrow = length(qq), ncol = 3)
+acc[1,] <- quantile(filter(df_acc, q < 0.505)$Accuracy, probs = c(q_l, 0.5, q_u))
+acc[length(qq),] <- quantile(filter(df_acc, q >= 0.995)$Accuracy, probs = c(q_l, 0.5, q_u))
+for (i in 2:(length(qq)-1)) {
+  acc[i,] <- quantile(filter(df_acc, q >= qq[i]-0.005, q < qq[i]+0.005)$Accuracy, probs = c(q_l, 0.5, q_u))
+}
+colnames(acc) <- names_col
+acc <- as.data.frame(acc)
+acc$q <- qq
+acc <- acc |> pivot_longer(cols = !q, names_to = "Line", values_to = "Accuracy") |> 
+  mutate(Method = "SMLR") |> 
+  select(Method, q, Line, Accuracy)
+# NOTE: the accuracy is NOT a strictly increasing function in q, since we defined it as
+# Accuracy = (Total calls - NCs - WCs) / (Total calls - NCs)
+# so it actually only increases when the WCs decrease.
+# When q increases, the NCs will increase and the WCs will decrease, but the NCs
+# may very well take steps up without the WCs taking steps down, in which case
+# the Accuracy can decrease a bit.
+# Ideally, the WCs goes to zero as the first points turn into NCs, and in that
+# case, the Accuracy is strictly increasing, but NOT generally.
+
+df_acc_m <- lapply(dd_val_dils$D, function(x) {
+  data.frame("Accuracy_HSG" = ((x$N_test - x$HSG_WC - x$HSG_NN) / (x$N_test - x$HSG_NN))*100)
+}) |> bind_rows()
+df_acc_m <- data.frame("Accuracy" = c(min(df_acc_m$Accuracy_HSG),
+                                      quantile(df_acc_m$Accuracy_HSG, probs = c(q_l, 0.5, q_u)),
+                                      max(df_acc_m$Accuracy_HSG)),
+                       "Method" = rep("HSG", 5),
+                       "Line" = c("Min", names_col, "Max"),
+                       "x1" = 0.5,
+                       "x2" = 1) |> 
+  pivot_wider(values_from = "Accuracy", names_from = "Line")
+df_acc_stats <- df_acc_m |> select(Method, Q25, Median, Q75, x1, x2) |> 
+  # pivot_longer(cols = c(x1, x2), values_to = "q", names_to = NULL) |> 
+  pivot_longer(cols = c(Q25, Median, Q75), values_to = "Accuracy", names_to = "Line")
+
+
+(p_acc <- ggplot() + 
+  # geom_line(aes(x=q, y=Accuracy, alpha=Line), colour="grey", show.legend = F, data = df_acc) +
+  geom_line(aes(x=q, y=Accuracy, colour=Line), show.legend = F, data = df_acc) +
+  scale_colour_manual(values = rep("grey",1000)) +
+  new_scale_color() +
+  geom_rect(aes(xmin=x1, xmax=x2, ymin=Min, ymax=Max, fill=Method), data=df_acc_m, alpha=0.3, show.legend = F) +
+  scale_fill_manual(breaks="HSG",
+                    values= "#F8766D",
+                    labels="HSG") +
+  # geom_rect(aes(xmin=x1, xmax=x2, ymin=Q25, ymax=Q75, fill=Method), data=df_acc_m, alpha=0.6) +
+  geom_smooth(aes(x=q, y=Accuracy, lty=Line, colour=Method), se=F, linewidth=0.5, data = acc) +
+  geom_segment(aes(x=x1, y=Accuracy, xend=x2, yend=Accuracy, colour=Method, lty=Line), data=df_acc_stats) +
+  scale_colour_manual(values = c("#F8766D", "black"),
+                      breaks = c("HSG", "SMLR")) +
+  scale_linetype_manual(values = c("dotted", "dashed", "dotted"),
+                        breaks = c("Q75", "Median", "Q25")) +
+  coord_cartesian(xlim = c(0.5, 1), ylim = c(98.75, 100), expand = F) +
+  scale_x_continuous(breaks = seq(0.5, 1, 0.1),
+                     labels = c(seq(0.5, 0.9, 0.1), 1)) +
+  theme_bw() +
+  ggtitle("Fit: 25pg, 50pg\nTest: 31.25pg, 50pg") +
+  theme(plot.title = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.position = "none"))
+
+# ggsave(filename = file.path("..", "article-FSIGEN", "accuracy_vs_q_low.pdf"), plot = p_acc,
+#        device = "pdf", width = 9, height = 7, units = "cm", dpi = 1000)
+```
+
+
+```{r}
+y_min <- 85 # minimal call rate to be displayed
+
+df_cr <- lapply(dd_val_dils$D, function(x) {
+  q <- c(x$p_WC, x$p_NN)
+  q <- floor_dec(q[order(q)], 4)
+  data.frame("q" = q,
+             "Call_rate" = ((x$N_test - 0:(length(q) - 1)) / x$N_test)*100)
+}) |> bind_rows(.id = "Line")
+
+
+qq <- seq(0.5, 0.95, 0.005)
+qq2 <- seq(0.96, 1, 0.001)
+cr <- matrix(NA, nrow = length(c(qq, qq2)), ncol = 3)
+cr[1,] <- quantile(filter(df_cr, q < 0.505)$Call_rate, probs = c(q_l, 0.5, q_u))
+cr[nrow(cr),] <- quantile(filter(df_cr, q >= 0.9995)$Call_rate, probs = c(q_l, 0.5, q_u))
+for (i in 2:(length(qq))) {
+  cr[i,] <- quantile(filter(df_cr, q >= qq[i]-0.005, q < qq[i]+0.005)$Call_rate, probs = c(q_l, 0.5, q_u))
+}
+for (i in 1:(length(qq2)-1)) {
+  cr[length(qq)+i,] <- quantile(filter(df_cr, q >= qq2[i]-0.0005, q < qq2[i]+0.0005)$Call_rate, probs = c(q_l, 0.5, q_u))
+}
+colnames(cr) <- names_col
+cr <- as.data.frame(cr)
+cr$q <- c(qq, qq2)
+cr <- cr |> pivot_longer(cols = !q, names_to = "Line", values_to = "Call_rate") |> 
+  mutate(Method = "SMLR") |> 
+  select(Method, q, Line, Call_rate)
+# In reality, the call rate should be strictly decreasing with increasing q, but
+# the sliding window makes it possible to have tiny steps up, which is meaningless
+# and disturbing. It's not as such visible in the plots, but to smooth the results,
+# we reorder and re-map the call rate.
+cr <- cr |> group_by(Line) |> arrange(desc(Call_rate), .by_group = T) |> mutate(q = c(qq, qq2))
+
+
+df_cr_m <- lapply(dd_val_dils$D, function(x) {
+  data.frame("Call_rate_HSG" = ((x$N_test - x$HSG_NN) / x$N_test)*100)
+}) |> bind_rows()
+df_cr_m <- data.frame("Call_rate" = c(min(df_cr_m$Call_rate_HSG),
+                                      quantile(df_cr_m$Call_rate_HSG, probs = c(q_l, 0.5, q_u)),
+                                      max(df_cr_m$Call_rate_HSG)),
+                      "Method" = rep("HSG", 5),
+                      "Line" = c("Min", names_col, "Max"),
+                       "x1" = 0.65,
+                       "x2" = 1) |> 
+  pivot_wider(values_from = "Call_rate", names_from = "Line")
+df_cr_stats <- df_cr_m |> select(Method, Q25, Median, Q75, x1, x2) |> 
+  # pivot_longer(cols = c(x1, x2), values_to = "q", names_to = NULL) |> 
+  pivot_longer(cols = c(Q25, Median, Q75), values_to = "Call_rate", names_to = "Line")
+
+
+
+(p_cr <- ggplot() + 
+  # geom_line(aes(x=q, y=Call_rate, alpha=Line), colour="grey", show.legend = F, data = df_cr) +
+  geom_line(aes(x=q, y=Call_rate, colour=Line), show.legend = F, data = df_cr) +
+  scale_colour_manual(values = rep("grey",1000)) +
+  new_scale_color() +
+  geom_rect(aes(xmin=x1, xmax=x2, ymin=Min, ymax=Max, fill=Method), data=df_cr_m, alpha=0.3, show.legend = F) +
+  scale_fill_manual(breaks="HSG",
+                    values= "#F8766D",
+                    labels="HSG") +
+  # geom_rect(aes(xmin=x1, xmax=x2, ymin=Q25, ymax=Q75, fill=Method), data=df_acc_m, alpha=0.6) +
+  geom_line(aes(x=q, y=Call_rate, lty=Line, colour=Method), data = cr) +
+  geom_segment(aes(x=x1, y=Call_rate, xend=x2, yend=Call_rate, colour=Method, lty=Line), data=df_cr_stats) +
+  scale_colour_manual(values = c("#F8766D", "black"),
+                      breaks = c("HSG", "SMLR")) +
+  scale_linetype_manual(values = c("dotted", "dashed", "dotted"),
+                        breaks = c("Q75", "Median", "Q25")) +
+  guides(lty = guide_legend(position = "inside"),
+         colour = guide_legend(position = "inside")) +
+  coord_cartesian(xlim = c(0.5, 1), ylim = c(y_min, 100), expand = F) +
+  scale_x_continuous(breaks = seq(0.5, 1, 0.1),
+                     labels = c(seq(0.5, 0.9, 0.1), 1)) +
+  theme_bw() +
+  # ggtitle("Fit: 50pg, 25pg\nTest: 50pg, 31.25pg") +
+  theme(plot.title = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.title = element_text(size = legend_title_size),
+        legend.text = element_text(size = legend_text_size),
+        legend.position.inside = c(0.15,0.41),
+        legend.spacing.y = unit(1, 'mm'),
+        legend.key.spacing = unit(1, 'mm'),
+        legend.key.height = unit(4, 'mm'),
+        legend.background = element_blank(),
+        legend.box.background = element_rect(colour = "black")) +
+  ylab("Call rate"))
+
+# ggsave(filename = file.path("..", "article-FSIGEN", "call-rate_vs_q_low.bmp"), plot = p_cr,
+#        device = "bmp", width = 9, height = 7, units = "cm", dpi = 1000)
+```
+
+```{r}
+p <- p_acc + p_cr & theme(plot.margin = margin(t=0, r=5.5, b=0, l=5.5, unit = 'pt'))
+p[[1]]$theme$plot.margin[4] <- 0*p[[1]]$theme$plot.margin[4]
+p[[2]]$theme$plot.margin[2] <- 0*p[[2]]$theme$plot.margin[2]
+(p <- p + plot_annotation(theme = theme(plot.margin = margin(t=0, r=1, b=0, l=0, unit = 'pt'))))
+
+ggsave(filename = file.path("..", "article-FSIGEN", "FIG_4-two-column.bmp"),
+       plot = p, device = "bmp", width = 7480, height = 2440, units = "px", dpi = 1000)
+```
+
+### Summary statistics for low
+```{r}
+# HSG median accuracy and call rate
+(a_med_hsg <- filter(df_acc_m, Method == "HSG")$Median)
+(filter(df_acc_m, Method == "HSG")$Max)
+(c_med_hsg <- filter(df_cr_m, Method == "HSG")$Median)
+(filter(df_cr_m, Method == "HSG")$Max)
+
+# At which q does the SMLR median accuracy surpass that of the HSG ('accuracy vs q'-plot)?
+# We used smoothed line in the plot, and we can compute this line by
+d_smlr_med <- acc |> filter(Line == "Median")
+loess.data <- stats::loess(Accuracy ~ q, data = d_smlr_med)
+loess.predict <- predict(loess.data, se = T)
+loess.df <- data.frame("Smoothed_accuracy" = loess.predict$fit, se = loess.predict$se.fit, "Data_accuracy" = d_smlr_med$Accuracy, q = d_smlr_med$q)
+(a_med <- loess.df |> filter(Smoothed_accuracy >= a_med_hsg) |> filter(q==min(q)))
+# (a_max <- acc |> filter(Line == "Median", Accuracy >= filter(df_acc_m, Method == "HSG")$Max) |> filter(q==min(q)))
+
+# What call rate does this q-value translate into when taken to the 'call rate vs q'-plot?
+(c_med <- cr |> filter(Line == "Median", q == plyr::round_any(a_med$q, 0.005)))
+# (c_max <- cr |> filter(Line == "Median", q == a_max$q))
+
+# This is an absolute increase of
+c_med$Call_rate - c_med_hsg
+plyr::round_any(c_med$Call_rate - c_med_hsg, 0.1)
+# And a relative increase of
+(c_med$Call_rate - c_med_hsg) / c_med_hsg
+
+# What is the largest q-value for which the SMLR has the same call rate as the HSG or higher?
+(q_cr <- cr |> filter(Line == "Median", Call_rate >= c_med_hsg) |> filter(q == max(q)))
+
+# What accuracy does this q-value translate into when taken back to the 'accuracy vs q'-plot?
+(q_ac <- loess.df |> filter(q == q_cr$q))
+
+# This is an absolute increase of
+plyr::round_any(q_ac$Smoothed_accuracy - a_med_hsg, 0.001)
+# And a relative increase of
+(q_ac$Smoothed_accuracy - a_med_hsg) / a_med_hsg
+
+# (a_med$Smoothed_accuracy - a_med_hsg)
+# (a_med$Smoothed_accuracy - a_med_hsg) / a_med_hsg
+# (c_max$Call_rate - c_max_hsg) / c_max_hsg
+
+# (c_max2 <- cr |> filter(Line == "Median", Call_rate >= c_max_hsg) |> filter(q==max(q)))
+# (a_med2 <- acc |> filter(Line == "Median", q == c_max2$q))
+# (a_max_hsg <- filter(df_acc_m, Method == "HSG")$Max)
+# (a_med2$Accuracy - a_max_hsg) / a_max_hsg
+```
+
+
+
+# Accuracy vs call rate (all models)
+```{r}
+dd_I <- readRDS(file.path("..", "data", "01_obj_crossval_I_1K_9individuals_low_high_all.rds"))
+dd_I_NI <- readRDS(file.path("..", "data", "01_obj_crossval_I_NI_1K_9individuals_low_high_all.rds"))
+dd_log <- readRDS(file.path("..", "data", "01_obj_crossval_log_1K_9individuals_low_high_all.rds"))
+dd_log_NI <- readRDS(file.path("..", "data", "01_obj_crossval_log_NI_1K_9individuals_low_high_all.rds"))
+dd_sqrt <- readRDS(file.path("..", "data", "01_obj_crossval_sqrt_1K_9individuals_low_high_all.rds"))
+dd_sqrt_NI <- readRDS(file.path("..", "data", "01_obj_crossval_sqrt_NI_1K_9individuals_low_high_all.rds"))
+
+dd_all <- list("I" = dd_I, "I_NI" = dd_I_NI,
+               "log" = dd_log, "log_NI" = dd_log_NI,
+               "sqrt" = dd_sqrt, "sqrt_NI" = dd_sqrt_NI)
+# Restructure list of lists (to make the subsequent script work more natural):
+dd_all <- lapply(names(dd_all[[1]]), function(name) {
+  lapply(dd_all, function(x) x[[name]])
+})
+names(dd_all) <- c("low", "high", "very_high")
+```
+
+```{r}
+dd_models <- lapply(dd_all, function(d) {
+  lapply(d, function(m) {
+  dd_r <- lapply(m, function(r) {
+    dd_pmax <- data.frame("p_max" = c(0, r$p_WC, r$p_NN),
+                          "WC_l" = c(F, rep(T, length(r$p_WC)), rep(F, length(r$p_NN)))) |> 
+      arrange(p_max) |> 
+      mutate(WC = length(r$p_WC) - cumsum(WC_l), NC = 0:r$N_test)
+    last_row <- dd_pmax[nrow(dd_pmax),] |> # to prevent division by zero
+      mutate(Accuracy = 100,
+             Call_rate = 0)
+    dd_pmax <- dd_pmax[-nrow(dd_pmax),] |> 
+      mutate(Accuracy = 100*(r$N_test - NC - WC) / (r$N_test - NC),
+             Call_rate = 100*(r$N_test - NC) / r$N_test) |> 
+      bind_rows(last_row) |> 
+      mutate(CR_bin = round(Call_rate, digits = 1))
+    
+    return(dd_pmax)
+  }) |> bind_rows()
+  dd_r <- dd_r |> group_by(CR_bin) |> 
+    summarise(Mean_AC = mean(Accuracy),
+              Median_AC = median(Accuracy),
+              Mean_CR = mean(Call_rate),
+              Median_CR = median(Call_rate),
+              Bin_count = n())
+  
+  return(dd_r)
+}) |> bind_rows(.id = "Model")
+})
+```
+
+```{r}
+HSG_WC_NC <- lapply(dd_all, function(d) {
+  # The HSG has the same results for all models, so we can access them from e.g. the square-root model
+  dd_hsg <- lapply(d$sqrt, function(r) {
+    data.frame("Accuracy" = 100*(r$N_test - r$HSG_NN - r$HSG_WC) / (r$N_test - r$HSG_NN),
+               "Call_rate" = 100*(r$N_test - r$HSG_NN) / r$N_test,
+               "Model" = "HSG")
+    }) |> bind_rows() |> 
+    group_by(Model) |> 
+    summarise(Accuracy = median(Accuracy),
+              Call_rate = median(Call_rate))
+  })
+```
+
+```{r}
+(p_low <- ggplot(dd_models$low, aes(x = CR_bin, y = Median_AC, colour = Model)) +
+  geom_line(show.legend = F) +
+  geom_point(aes(x = Call_rate, y = Accuracy, colour = Model), data = HSG_WC_NC$low, show.legend = F) +
+  coord_cartesian(xlim = c(100, 40), ylim = c(99, 100)) +
+  scale_x_reverse() +
+  xlab("Call rate [%]") + ylab("Median accuracy [%]") + 
+  ggtitle("Fit: 25pg, 50pg\nTest: 31.25pg, 50pg") +
+  theme_bw() +
+  theme(plot.title = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.position = "none"))
+
+(p_high <- ggplot(dd_models$high, aes(x = CR_bin, y = Median_AC, colour = Model)) + 
+  geom_line() + 
+  geom_point(aes(x = Call_rate, y = Accuracy, colour = Model), data = HSG_WC_NC$high) +
+  guides(colour = guide_legend(position = "inside")) +
+  coord_cartesian(xlim = c(100, 95), ylim = c(99.95, 100)) +
+  scale_x_reverse() +
+  xlab("Call rate [%]") + ylab("Median accuracy [%]") + 
+  ggtitle("\n62.5pg, 125pg, 250pg") +
+  theme_bw() +
+  theme(plot.title = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.title = element_text(size = legend_title_size),
+        legend.text = element_text(size = legend_text_size),
+        legend.position.inside = c(0.837,0.48),
+        legend.key.spacing = unit(3, 'mm'),
+        legend.key.height = unit(5, 'mm'),
+        legend.background = element_blank(),
+        legend.box.background = element_rect(colour = "black")))
+
+# p_very_high <- ggplot(dd_models$very_high, aes(x = CR_bin, y = Median_AC, colour = Model)) + 
+#   geom_line(show.legend = F) + 
+#   geom_point(aes(x = Call_rate, y = Accuracy, colour = Model), data = HSG_WC_NC$very_high, show.legend = F) +
+#   coord_cartesian(xlim = c(100, 99.9), ylim = c(99.95, 100)) +
+#   scale_x_reverse(breaks = c(100, 99.95, 99.9), labels = c("100", "99.95", "99.9")) +
+#   xlab("Call rate [%]") + ylab("Median accuracy [%]") + 
+#   ggtitle("\n500pg, 1000pg") +
+#   theme_bw() +
+#   theme(plot.title = element_text(size = plot_title_size),
+#         axis.title = element_text(size = axis_title_size),
+#         axis.text = element_text(size = axis_ticks_size),
+#         legend.title = element_text(size = legend_title_size),
+#         legend.text = element_text(size = legend_text_size))
+```
+
+```{r}
+# (p <- p_low + p_high + p_very_high +
+#    plot_layout(ncol = 3, nrow = 1, byrow = T, guides = "collect", axis_titles = "collect") &
+#    scale_colour_manual(values=cbp1[c(7, 1:6)],
+#                        breaks = c("HSG", "I", "I_NI", "log", "log_NI", "sqrt", "sqrt_NI"),
+#                        labels = unname(c("HSG",
+#                                          TeX("$I$"),
+#                                          TeX("$I, \\beta_0 = 0$"),
+#                                          TeX("$log$"),
+#                                          TeX("$log, \\beta_0 = 0$"),
+#                                          TeX("$sqrt$"),
+#                                          TeX("$sqrt, \\beta_0 = 0$")))))
+
+p <- p_low + p_high +
+   plot_layout(ncol = 2, nrow = 1, byrow = T, axis_titles = "collect") &
+   scale_colour_manual(values=cbp1[c(7, 1:6)],
+                       breaks = c("HSG", "I", "I_NI", "log", "log_NI", "sqrt", "sqrt_NI"),
+                       labels = unname(c("HSG",
+                                         TeX("$I$"),
+                                         TeX("$I, \\beta_0 = 0$"),
+                                         TeX("$log$"),
+                                         TeX("$log, \\beta_0 = 0$"),
+                                         TeX("$sqrt$"),
+                                         TeX("$sqrt, \\beta_0 = 0$")))) &
+  theme(plot.margin = margin(t=0, r=5.5, b=0, l=5.5, unit = 'pt'))
+p[[1]]$theme$plot.margin[4] <- 0*p[[1]]$theme$plot.margin[4]
+p[[2]]$theme$plot.margin[2] <- 0*p[[2]]$theme$plot.margin[2]
+(p <- p + plot_annotation(theme = theme(plot.margin = margin(t=0, r=0, b=0, l=0, unit = 'pt'))))
+
+ggsave(filename = file.path("..", "article-FSIGEN", "FIG_3-two-column.bmp"),
+       plot = p, device = "bmp", width = 7480, height = 2480, units = "px", dpi = 1000)
+```
+
+*NOTE*: below a call rate of $50\%$ in the left plot (corresponding to q-values above 0.999), the yellow line (model with intercept and square root transformation) jumps a bit up and down.
+At first glance, this may seem odd, but it's not!
+Remember: the first axis was divided into call rate bins (with a width of one per cent) and within each bin, the median accuracy was computed.
+There is nothing odd in that the median accuracy goes a little up and down for a few consecutive bins.
+Had we chosen a more coarse first axis (larger call rate bin size), the jumping would likely be smoothed out.
+However, this would have resulted in a less accurate depiction at the call rates above $90\%$.
+After all, the higher call rates are the most interesting, so we want a fine call rate scale in that range to be able to distinguish the near vertical lines in the left side of the plot.
+Therefore, we accept the side effect of a little jumping for this single line in the less interesting right side of the plot --- we could easily argue that it would be sufficient to only let the first axis extend down to a call rate of $50\%$ (or even higher), which would remove the part with the jumping line.
+
+The creation of the plot of the median accuracy vs. call rate with the HSG's performance represented as a red dot was guided by the fact that the HSG has just one call rate and accuracy per cross validation iteration, whereas each SMLR model has a variable call rate and accuracy that ultimately depends on the probability threshold, q.
+Thus, each SMLR model's median accuracy within each bin of call rates will be based on result across all cross-validation iterations.
+However, if we tried to make call rate bins for the HSG, these would not be able to contain accuracies from all cross-validation iterations, unless all accuracies were observed within the same bin, in which case the result would be a point very similar to the red dot from above.
+The intuition behind that visualization approach is, that it is best to base the displayed points and lines on all cross-validation iterations.
+
+But let's also try to see what happens, if we make call rate bins for the HSG:
+```{r}
+HSG_WC_NC_bins <- lapply(dd_all, function(d) {
+  m <- d$sqrt
+  dd_r <- lapply(m, function(r) {
+    dd_hsg <- data.frame("Accuracy" = 100*(r$N_test - r$HSG_NN - r$HSG_WC) / (r$N_test - r$HSG_NN),
+                         "Call_rate" = 100*(r$N_test - r$HSG_NN) / r$N_test) |> 
+      mutate(CR_bin = round(Call_rate, digits = 1))
+    return(dd_hsg)
+  }) |> bind_rows()
+  dd_r <- dd_r |> group_by(CR_bin) |> 
+    summarise(Mean_AC = mean(Accuracy),
+              Median_AC = median(Accuracy),
+              Mean_CR = mean(Call_rate),
+              Median_CR = median(Call_rate),
+              Bin_count = n())
+  
+  return(cbind("Model" = "HSG", dd_r))
+})
+```
+
+```{r}
+p_low <- ggplot(dd_models$low, aes(x = CR_bin, y = Median_AC, colour = Model)) +
+  geom_line() +
+  geom_point(aes(x = CR_bin, y = Median_AC, colour = Model), data = HSG_WC_NC_bins$low) +
+  coord_cartesian(xlim = c(100, 40), ylim = c(99, 100)) +
+  scale_x_reverse() +
+  xlab("Call rate [%]") + ylab("Median accuracy [%]") + 
+  ggtitle("Fit: 25pg, 50pg\nTest: 31.25pg, 50pg") +
+  # theme_bw() +
+  theme(axis.title.y=element_text(size = axis_title_size), plot.title = element_text(size = plot_title_size))
+
+p_high <- ggplot(dd_models$high, aes(x = CR_bin, y = Median_AC, colour = Model)) + 
+  geom_line(show.legend = F) + 
+  geom_point(aes(x = CR_bin, y = Median_AC, colour = Model), data = HSG_WC_NC_bins$high, show.legend = F) +
+  coord_cartesian(xlim = c(100, 95), ylim = c(99.95, 100)) +
+  scale_x_reverse() +
+  xlab("Call rate [%]") + ylab("Median accuracy [%]") + 
+  ggtitle("\n62.5pg, 125pg, 250pg") +
+  # theme_bw() +
+  theme(axis.title.y=element_blank(),
+        plot.title = element_text(size = plot_title_size))
+```
+
+```{r}
+(p <- p_low + p_high +
+   plot_layout(ncol = 2, nrow = 1, byrow = T, guides = "collect", axis_titles = "collect") &
+   scale_colour_manual(values=cbp1[c(7, 1:6)],
+                       breaks = c("HSG", "I", "I_NI", "log", "log_NI", "sqrt", "sqrt_NI"),
+                       labels = unname(c("HSG",
+                                         TeX("$I$"),
+                                         TeX("$I, \\beta_0 = 0$"),
+                                         TeX("$log$"),
+                                         TeX("$log, \\beta_0 = 0$"),
+                                         TeX("$sqrt$"),
+                                         TeX("$sqrt, \\beta_0 = 0$")))))
+
+ggsave(filename = file.path("..", "article-FSIGEN", "accuracy_vs_call_rate_bins.bmp"), plot = p,
+       device = "bmp", width = 30, height = 10.5, units = "cm")
+```
+
+The result of this visualization test is:
+The HSG has a rather constant accuracy and call rate across all cross-validation iterations, so we don't really lose any information by displaying a single point.
+For the higher DNA amounts (62.5pg, 125pg, and 250pg) we actually only got one call rate bin, so here it was only possible to display a single point (when rounding call rates to one decimal).
+For the lower DNA amounts, we got nine call rate bins ranging from 93.2 to 94.0, and they all had very close median accuracies:
+```{r}
+table(round(HSG_WC_NC_bins$low$Median_AC, 3))
+```
+where the highest median accuracy was for a bin that only contained three observations/cross-validation iterations.
+```{r}
+HSG_WC_NC_bins$low[,c("Bin_count", "Median_AC")]
+```
+This was exactly what I wanted to avoid, when I insisted on "that it is best to base the displayed points and lines on all cross-validation iterations".
+
+The minimum observed points in SMLR models' call rate bins for the ranges of DNA quantities are
+```{r}
+sapply(dd_models, function(d){min(d$Bin_count)})
+```
+so their median accuracies are definitely well estimated.
+
+
+# Summary statistics to be reported in article
+```{r}
+# Low dilutions (31.25pg and 50pg)
+# HSG median accuracy and call rate
+(hsg_med_ac_cr_low <- round(HSG_WC_NC$low[,c("Accuracy", "Call_rate")], digits = 3))
+
+# When does SMLR surpass HSG's median accuracy and what is its accuracy at call rate 95%
+SMLR_med_ac_cr_low <- dd_models$low |> filter(Model == "sqrt") |> select(CR_bin, Median_AC, Bin_count)
+SMLR_med_ac_cr_low |> filter(Median_AC >= hsg_med_ac_cr_low$Accuracy) |> 
+  filter(CR_bin == max(CR_bin))
+SMLR_med_ac_cr_low |> filter(CR_bin == 95)
+
+
+# High dilutions (62.5pg, 125pg, and 250pg)
+# HSG median accuracy and call rate
+(hsg_med_ac_cr_high <- round(HSG_WC_NC$high[,c("Accuracy", "Call_rate")], digits = 3))
+
+# When does SMLR surpass HSG's median accuracy and what is its accuracy at call rate 95%
+SMLR_med_ac_cr_high <- dd_models$high |> filter(Model == "sqrt") |> select(CR_bin, Median_AC, Bin_count)
+SMLR_med_ac_cr_high |> filter(Median_AC >= hsg_med_ac_cr_high$Accuracy) |> 
+  filter(CR_bin == max(CR_bin))
+SMLR_med_ac_cr_high |> filter(Median_AC == 100) |> 
+  filter(CR_bin == max(CR_bin))
+
+
+# Very high dilutions (500pg, 1000pg)
+# HSG median accuracy and call rate
+(hsg_med_ac_cr_very_high <- round(HSG_WC_NC$very_high[,c("Accuracy", "Call_rate")], digits = 3))
+
+# When does SMLR surpass HSG's median accuracy and what is its accuracy at call rate 95%
+SMLR_med_ac_cr_very_high <- dd_models$very_high |> filter(Model == "sqrt") |> select(CR_bin, Median_AC, Bin_count)
+SMLR_med_ac_cr_very_high |> filter(Median_AC >= hsg_med_ac_cr_very_high$Accuracy) |> 
+  filter(CR_bin == max(CR_bin))
+SMLR_med_ac_cr_very_high |> filter(CR_bin == 95)
+```
+
+
+
+# HIGH
+# Accuracy and call rate vs. q for the cv winner fit testing on high dilutions
+```{r}
+# dd_val_dils <- readRDS(file.path("..", "data", "01_obj_crossval_sqrt_NI_1K_9individuals_low_high_all.rds"))
+dd_val_dils <- readRDS(file.path("..", "data", "01_obj_crossval_sqrt_1K_9individuals_low_high_all.rds"))
+dd_val_dils <- dd_val_dils[2]
+names(dd_val_dils) <- "D"
+```
+
+```{r}
+# df_acc <- lapply(dd_val_dils$D, function(x) {
+#   q <- floor_dec(x$p_WC, 4)
+#   data.frame("q" = c(q, max(q) + 0.0001),
+#              "Accuracy" = c(((x$N_test - rev(1:length(q))) / x$N_test)*100, 100))
+# }) |> bind_rows(.id = "Line")
+df_acc <- lapply(dd_val_dils$D, function(x) {
+  q <- c(x$p_WC, min(x$p_NN[x$p_NN > max(x$p_WC)]))
+  WC <- sapply(q, function(y) {sum(x$p_WC >= y)})
+  p_all <- c(x$p_WC, x$p_NN)
+  NC <- sapply(q, function(y) {sum(p_all < y)})
+  
+  q <- floor_dec(q, 4)
+  a <- floor_dec(((x$N_test - WC - NC) / (x$N_test - NC))*100, 2)
+  data.frame("q" = q,
+             "Accuracy" = a)
+}) |> bind_rows(.id = "Line") ##|> 
+  # mutate(Line = as.factor((80+(as.numeric(Line)-1)*(100-80)/(1000-1))/100))
+
+
+acc <- unique(df_acc$Accuracy)[order(unique(df_acc$Accuracy))]
+qq_acc <- matrix(NA, nrow = length(acc), ncol = 3)
+qq_acc[1,] <- quantile(filter(df_acc, Accuracy == min(df_acc$Accuracy))$q, probs = c(q_l, 0.5, q_u))
+qq_acc[length(acc),] <- quantile(filter(df_acc, Accuracy == max(df_acc$Accuracy))$q, probs = c(q_l, 0.5, q_u))
+for (i in 2:(length(acc)-1)) {
+  qq_acc[i,] <- quantile(filter(df_acc, Accuracy == acc[i])$q, probs = c(q_l, 0.5, q_u))
+}
+colnames(qq_acc) <- names_col
+qq_acc <- as.data.frame(qq_acc)
+qq_acc$Accuracy <- acc
+qq_acc <- qq_acc |> pivot_longer(cols = !Accuracy, names_to = "Line", values_to = "q") |> 
+  mutate(Method = "SMLR") |> 
+  select(Method, q, Line, Accuracy)
+
+df_acc_m <- lapply(dd_val_dils$D, function(x) {
+  data.frame("Accuracy_HSG" = ((x$N_test - x$HSG_WC - x$HSG_NN) / (x$N_test - x$HSG_NN))*100,
+             "Accuracy_EQC" = ((x$N_test - x$EQC_WC - x$EQC_NN) / (x$N_test - x$EQC_NN))*100)
+}) |> bind_rows(.id = "Line")
+df_acc_m <- data.frame("Accuracy" = c(min(df_acc_m$Accuracy_HSG),
+                                      quantile(df_acc_m$Accuracy_HSG, probs = c(q_l, 0.5, q_u)),
+                                      max(df_acc_m$Accuracy_HSG),
+                                      min(df_acc_m$Accuracy_EQC),
+                                      quantile(df_acc_m$Accuracy_EQC, probs = c(q_l, 0.5, q_u)),
+                                      max(df_acc_m$Accuracy_EQC)),
+                       "Method" = rep(c("HSG", "EQC"), each=5),
+                       "Line" = rep(c("Min", names_col, "Max"), 2),
+                       "x1" = 0.5,
+                       "x2" = 0.8) |> 
+  pivot_wider(values_from = "Accuracy", names_from = "Line")
+df_acc_stats <- df_acc_m |> select(Method, Q25, Median, Q75, x1, x2) |> 
+  # pivot_longer(cols = c(x1, x2), values_to = "q", names_to = NULL) |> 
+  pivot_longer(cols = c(Q25, Median, Q75), values_to = "Accuracy", names_to = "Line")
+
+
+(p_acc <- ggplot() + 
+  # geom_line(aes(x=q, y=Accuracy, alpha=Line), colour="grey", show.legend = F, data = df_acc) +
+  geom_line(aes(x=q, y=Accuracy, colour=Line), show.legend = F, data = df_acc) +
+  scale_colour_manual(values = rep("grey",1000)) +
+  new_scale_color() +
+  geom_rect(aes(xmin=x1, xmax=x2, ymin=Min, ymax=Max, fill=Method), data=df_acc_m, alpha=0.3, show.legend = F) +
+  scale_fill_manual(breaks=c("HSG", "EQC"),
+                    values= c("#F8766D", "#619CFF"),
+                    labels=c("HSG", "EQC")) +
+  
+  # geom_rect(aes(xmin=x1, xmax=x2, ymin=Q25, ymax=Q75, fill=Method), data=df_acc_m, alpha=0.6) +
+  geom_line(aes(x=q, y=Accuracy, lty=Line, colour=Method), data = qq_acc) +
+  geom_segment(aes(x=x1, y=Accuracy, xend=x2, yend=Accuracy, colour=Method, lty=Line), data=df_acc_stats) +
+  scale_colour_manual(values = c("#F8766D", "#619CFF", "black"),
+                      breaks = c("HSG", "EQC", "SMLR")) +
+  scale_linetype_manual(values = c("dotted", "dashed", "dotted"),
+                        breaks = c("Q75", "Median", "Q25")) +
+  theme_bw() +
+  ggtitle("Fit: 50pg, 25pg\nTest: 250pg, 125pg, 62.5pg") +
+  theme(plot.title = element_text(size = 7),
+        legend.position = "none"))
+
+# ggsave(filename = file.path("..", "article-FSIGEN", "accuracy_vs_q_high.pdf"), plot = p_acc,
+#        device = "pdf", width = 18, height = 11, units = "cm")
+```
+
+
+```{r}
+df_cr <- lapply(dd_val_dils$D, function(x) {
+  q <- c(x$p_WC, x$p_NN)
+  q <- floor_dec(q[order(q)], 4)
+  data.frame("q" = q,
+             "Call_rate" = ((x$N_test - 0:(length(q) - 1)) / x$N_test)*100)
+}) |> bind_rows(.id = "Line") ##|> 
+  # mutate(Line = as.factor((80+(as.numeric(Line)-1)*(100-80)/(1000-1))/100))
+
+
+qq <- seq(0.5, 0.95, 0.01)
+qq2 <- seq(0.96, 1, 0.001)
+cr <- matrix(NA, nrow = length(c(qq, qq2)), ncol = 3)
+cr[1,] <- quantile(filter(df_cr, q < 0.505)$Call_rate, probs = c(q_l, 0.5, q_u))
+cr[nrow(cr),] <- quantile(filter(df_cr, q >= 0.9995)$Call_rate, probs = c(q_l, 0.5, q_u))
+for (i in 2:(length(qq))) {
+  cr[i,] <- quantile(filter(df_cr, q >= qq[i]-0.005, q < qq[i]+0.005)$Call_rate, probs = c(q_l, 0.5, q_u))
+}
+for (i in 1:(length(qq2)-1)) {
+  cr[length(qq)+i,] <- quantile(filter(df_cr, q >= qq2[i]-0.0005, q < qq2[i]+0.0005)$Call_rate, probs = c(q_l, 0.5, q_u))
+}
+colnames(cr) <- names_col
+cr <- as.data.frame(cr)
+cr$q <- c(qq, qq2)
+cr <- cr |> pivot_longer(cols = !q, names_to = "Line", values_to = "Call_rate") |> 
+  mutate(Method = "SMLR") |> 
+  select(Method, q, Line, Call_rate)
+cr <- cr |> group_by(Line) |> arrange(desc(Call_rate), .by_group = T) |> mutate(q = c(qq, qq2))
+
+
+df_cr_m <- lapply(dd_val_dils$D, function(x) {
+  data.frame("Call_rate_HSG" = ((x$N_test - x$HSG_NN) / x$N_test)*100,
+             "Call_rate_EQC" = ((x$N_test - x$EQC_NN) / x$N_test)*100)
+}) |> bind_rows(.id = "Line")
+df_cr_m <- data.frame("Call_rate" = c(min(df_cr_m$Call_rate_HSG),
+                                      quantile(df_cr_m$Call_rate_HSG, probs = c(q_l, 0.5, q_u)),
+                                      max(df_cr_m$Call_rate_HSG),
+                                      min(df_cr_m$Call_rate_EQC),
+                                      quantile(df_cr_m$Call_rate_EQC, probs = c(q_l, 0.5, q_u)),
+                                      max(df_cr_m$Call_rate_EQC)),
+                      "Method" = rep(c("HSG", "EQC"), each=5),
+                      "Line" = rep(c("Min", names_col, "Max"), 2),
+                       "x1" = 0.5,
+                       "x2" = 1) |> 
+  pivot_wider(values_from = "Call_rate", names_from = "Line")
+df_cr_stats <- df_cr_m |> select(Method, Q25, Median, Q75, x1, x2) |> 
+  # pivot_longer(cols = c(x1, x2), values_to = "q", names_to = NULL) |> 
+  pivot_longer(cols = c(Q25, Median, Q75), values_to = "Call_rate", names_to = "Line")
+
+
+
+(p_cr <- ggplot() + 
+  # geom_line(aes(x=q, y=Call_rate, alpha=Line), colour="grey", show.legend = F, data = df_cr) +
+  geom_line(aes(x=q, y=Call_rate, colour=Line), show.legend = F, data = df_cr) +
+  scale_colour_manual(values = rep("grey",1000)) +
+  new_scale_color() +
+  geom_rect(aes(xmin=x1, xmax=x2, ymin=Min, ymax=Max, fill=Method), data=df_cr_m, alpha=0.3, show.legend = F) +
+  scale_fill_manual(breaks=c("HSG", "EQC"),
+                    values= c("#F8766D", "#619CFF"),
+                    labels=c("HSG", "EQC")) +
+  # geom_rect(aes(xmin=x1, xmax=x2, ymin=Q25, ymax=Q75, fill=Method), data=df_acc_m, alpha=0.6) +
+  geom_line(aes(x=q, y=Call_rate, lty=Line, colour=Method), data = cr) +
+  geom_segment(aes(x=x1, y=Call_rate, xend=x2, yend=Call_rate, colour=Method, lty=Line), data=df_cr_stats) +
+  scale_colour_manual(values = c("#F8766D", "#619CFF", "black"),
+                      breaks = c("HSG", "EQC", "SMLR")) +
+  scale_linetype_manual(values = c("dotted", "dashed", "dotted"),
+                        breaks = c("Q75", "Median", "Q25")) +
+  theme_bw() +
+  # ggtitle("Fit: 50pg, 25pg\nTest: 250pg, 125pg, 62.5pg") +
+  theme(plot.title = element_text(size = 10)) +
+    ylab("Call rate"))
+
+# ggsave(filename = file.path("..", "article-FSIGEN", "call-rate_vs_q_high.bmp"), plot = p_cr,
+#        device = "bmp", width = 18, height = 11, units = "cm")
+```
+
+```{r}
+(p <- p_acc + p_cr + plot_layout(ncol = 2, nrow = 1, byrow = T, guides = "collect"))
+ggsave(filename = file.path("..", "article-FSIGEN", "accr_vs_q_high.bmp"), plot = p,
+       device = "bmp", width = 30, height = 11, units = "cm")
+```
+
+
+### Summary statistics for high
+```{r}
+filter(df_acc_stats, Line == "Median", Method == "HSG")$Accuracy
+(q100 <- qq_acc |> filter(Line == "Median", Accuracy == 100) |> filter(q==min(q)))
+(cr |> filter(Line == "Median", q >= q100$q) |> filter(q==min(q)))
+# filter(df_acc_m, Method == "HSG")$Max
+# 
+(a_med <- qq_acc |> filter(Line == "Median", Accuracy >= filter(df_acc_stats, Line == "Median", Method == "HSG")$Accuracy) |> filter(q==min(q)))
+# (a_max <- qq_acc |> filter(Line == "Median", Accuracy >= filter(df_acc_m, Method == "HSG")$Max) |> filter(q==min(q)))
+(c_med <- cr |> filter(Line == "Median", q < a_med$q) |> filter(q == max(q)))
+# (c_max <- cr |> filter(Line == "Median", q == a_max$q))
+(c_med_hsg <- filter(df_cr_m, Method == "HSG")$Median)
+# (c_max_hsg <- filter(df_cr_m, Method == "HSG")$Max)
+(c_med$Call_rate - c_med_hsg) / c_med_hsg
+# (c_max$Call_rate - c_max_hsg) / c_max_hsg
+
+# (c_max2 <- cr |> filter(Line == "Median", Call_rate >= c_max_hsg) |> filter(q==max(q)))
+# (a_med2 <- acc |> filter(Line == "Median", q == c_max2$q))
+# (a_max_hsg <- filter(df_acc_m, Method == "HSG")$Max)
+# (a_med2$Accuracy - a_max_hsg) / a_max_hsg
+# 
+(a_med <- qq_acc |> filter(Line == "Median", Accuracy >= filter(df_acc_stats, Line == "Median", Method == "EQC")$Accuracy) |> filter(q==min(q)))
+# (a_max <- qq_acc |> filter(Line == "Median", Accuracy >= filter(df_acc_m, Method == "EQC")$Max) |> filter(q==min(q)))
+(c_med <- cr |> filter(Line == "Median", q < a_med$q) |> filter(q == max(q)))
+# (c_max <- cr |> filter(Line == "Median", q == a_max$q))
+(c_med_eqc <- filter(df_cr_m, Method == "EQC")$Median)
+# (c_max_eqc <- filter(df_cr_m, Method == "EQC")$Max)
+(c_med$Call_rate - c_med_eqc) / c_med_eqc
+# (c_max$Call_rate - c_max_eqc) / c_max_eqc
+
+# (c_max2 <- cr |> filter(Line == "Median", Call_rate >= c_max_eqc) |> filter(q==max(q)))
+# (a_med2 <- qq_acc |> filter(Line == "Median", q == floor_dec(c_max2$q, 2)))
+# (a_max_eqc <- filter(df_acc_m, Method == "EQC")$Max)
+# (a_med2$Accuracy - a_max_eqc) / a_max_eqc
+
+# At which q does the SMLR have the same call rate as the HSG
+(q_hsg <- cr |> filter(Line == "Median", Call_rate >= c_med_hsg) |> filter(q == max(q)))
+df_acc |> filter(Accuracy == 100, q >= q_hsg$q) |> nrow()
+```

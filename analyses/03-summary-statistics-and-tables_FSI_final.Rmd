@@ -1,0 +1,712 @@
+---
+title: "Summary statistics and tables"
+author: "Corresponding author"
+date: "2023-30-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggnewscale) # Enables multiple colour- and fill-scales
+library(latex2exp)
+library(patchwork)
+library(xtable)
+source("00_functions_and_global_definitions.R")
+
+plot_title_size <- 7
+axis_title_size <- 7
+axis_ticks_size <- 7
+legend_title_size <- 7
+legend_text_size <- 7
+```
+
+```{r Reading data}
+dd_GT <- readRDS(file.path("..", "data", "00_dd_GT_all_loci.rds"))
+dd_GT_2nd <- readRDS(file.path("..", "data", "00_dd_GT_2nd_all_loci.rds"))
+true_profiles_2nd <- readRDS(file.path("..", "data", "00_true_profiles_2nd.rds"))
+dd_GT_both <- bind_rows(dd_GT[,1:26], dd_GT_2nd)
+```
+
+
+# Summary statistics
+## Number of NCs and WCs in scatterplot for 31.25pg
+```{r}
+dd_GT_31.25 <- dd_GT |>
+  filter(Dilution == 31.25, !(Target.ID %in% c("rs459920", "rs7251928", "rs7722456"))) |> 
+  mutate(Genotype_EQC = threshold_rule(.data))
+
+summarise(.data = dd_GT_31.25,
+          "Total SNPs" = n(),
+          "HSG NC" = sum(Genotype == "NC"),
+          "HSG WC" = sum(Genotype != "NC" & Genotype != Genotype_true),
+          "EQC NC" = sum(Genotype_EQC == "NC"),
+          "EQC WC" = sum(Genotype_EQC != "NC" & Genotype_EQC != Genotype_true)) |> t()
+```
+
+```{r}
+m_fit <- fit_symmetry_model2(df = dd_GT_31.25, f = sqrt, intercept = T, b_int = c(0, 1,-2))
+dd_GT_31.25 <- predict_prob_threshold(dd_GT_31.25, m_fit)
+fit_WC <- dd_GT_31.25 |> filter(Genotype_pred != Genotype_true)
+fit_CC <- dd_GT_31.25 |> filter(Genotype_pred == Genotype_true)
+p_WC <- fit_WC$p_max[order(fit_WC$p_max)]
+p_CC <- fit_CC$p_max
+lapply(p_WC, function(x) {
+  n_WC <- sum(p_WC >= x)
+  n_NC <- sum(p_WC < x) + sum(p_CC < x)
+  return(list("NC" = n_NC, "WC" = n_WC, "q" = x))
+}) |> bind_rows()
+sum(p_WC >= 0.9767)
+sum(p_WC < 0.9767) + sum(p_CC < 0.9767)
+```
+
+
+## True genotypes for the first dilution series
+The first dilution series was measured in four independent runs.
+In Run A, B, and D, all six dilutions from 1000pg halved until 31.25pg were measure, but Run C ends at 62.5pg, because the library was used up.
+Furthermore, for Dilution 62.5pg in Run C, only one of the individuals were measured, and for Dilution 31.25pg in Run D, only two of the individuals were measured.
+Hence, we have $108$ attempts to measure a profile, and $21$ runs/dilutions containing data from all five individuals.
+
+Below we see that 16 of the runs and dilutions agree on the `Genotype` provided by the HID SNP Genotyper plug-in (HSG).
+That is, in the six runs/dilutions from the first five comparisons below, the HSG didn't make any no-calls (NCs), and they agree on each measured genotype, but for the next eight comparisons, the HSG made a few NCs, and if we ignore these, the runs/dilutions also agree on each measured genotype.
+
+Then Dilution 250pg and 125pg from Run C each have a single genotype that don't match the previous 14 agreeing measurements, and likewise the Dilution 62.5pg and 31.25pg from Run B have two and four non-matching genotypes, respectively.
+
+Five of the lower dilutions in Run A, C, and D have missing genotypes (i.e. not no-calls, but genotypes that simply weren't measured).
+For two of these, the remaining genotypes agree with the first five comparisons when we ignore their NCs.
+The one of these (Dilution 62.5pg in Run C) also agreed with the first five comparisons when we ignore their NCs, but this sample only has data from one individual.
+For the last two, both had three non-matching genotypes.
+
+Overall, this gives six fully matching measurement (i.e. five pairwise comparisons give us six different runs/dilutions) and ten matching measurements for all five individuals when no-calls are ignored, and a matching measurement for a single individual when no-calls are ignored.
+We can therefore say, that 16 out of 21 runs/dilutions agreed on the actually called genotypes for all five individuals.
+```{r}
+genotype_HID <- dd_GT |> mutate(run_dil = interaction(Run, Dilution))
+genotype_HID <- split(genotype_HID, as.factor(genotype_HID$run_dil))
+genotype_HID <- genotype_HID[-3] # Run C don't have a dilution 31.25
+
+
+# In the following six 'Runs' x 'Dilutions', all SNPs were predicted by the HSG
+# (i.e. it made 0 no-calls, but actual genotype predictions for all markers)
+names(genotype_HID)[sapply(genotype_HID, function(x) {!any(x$Genotype == "NC")})]
+# All of these full profiles agree for each individual
+sum(genotype_HID$A.1000$Genotype != genotype_HID$C.1000$Genotype)
+sum(genotype_HID$A.1000$Genotype != genotype_HID$D.1000$Genotype)
+sum(genotype_HID$A.1000$Genotype != genotype_HID$B.500$Genotype)
+sum(genotype_HID$A.1000$Genotype != genotype_HID$D.500$Genotype)
+sum(genotype_HID$A.1000$Genotype != genotype_HID$D.250$Genotype)
+# Since these full profiles agree and were measured with high DNA quantities,
+# we will assume that they are the true profiles.
+
+# We further have twelve profiles where all markers were measured, but some were no-calls
+names(genotype_HID)[sapply(genotype_HID, function(x) {nrow(x) == nrow(genotype_HID$A.1000) & any(x$Genotype == "NC")})]
+# Eight of these profiles agree when ignoring no-calls:
+sum(genotype_HID$A.1000$Genotype != genotype_HID$B.1000$Genotype & genotype_HID$B.1000$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$A.500$Genotype & genotype_HID$A.500$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$C.500$Genotype & genotype_HID$C.500$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$A.250$Genotype & genotype_HID$A.250$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$B.250$Genotype & genotype_HID$B.250$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$B.125$Genotype & genotype_HID$B.125$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$D.125$Genotype & genotype_HID$D.125$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$D.62.5$Genotype & genotype_HID$D.62.5$Genotype != "NC")
+# And four of them have disagreements (according to the assumed true profiles)
+sum(genotype_HID$A.1000$Genotype != genotype_HID$C.250$Genotype & genotype_HID$C.250$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$C.125$Genotype & genotype_HID$C.125$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$B.62.5$Genotype & genotype_HID$B.62.5$Genotype != "NC")
+sum(genotype_HID$A.1000$Genotype != genotype_HID$B.31.25$Genotype & genotype_HID$B.31.25$Genotype != "NC")
+
+# The last five 'Runs' x 'Dilutions' do not contain the full 5*165 = 825 SNP measurements,
+# either because of limited DNA material for some individuals (which then weren't examined),
+# or because of NAs
+names(genotype_HID)[sapply(genotype_HID, function(x) {nrow(x) != nrow(genotype_HID$A.1000) & any(x$Genotype == "NC")})]
+# When ignoring no-calls, three of these sets of partial profiles do agree
+dd_combined <- genotype_HID$A.125[,c("ID", "Target.ID", "Genotype")] |> inner_join(genotype_HID$A.1000[,c("ID", "Target.ID", "Genotype")], by = c("ID", "Target.ID"))
+sum(dd_combined$Genotype.x != dd_combined$Genotype.y & dd_combined$Genotype.x != "NC")
+dd_combined <- genotype_HID$A.62.5[,c("ID", "Target.ID", "Genotype")] |> inner_join(genotype_HID$A.1000[,c("ID", "Target.ID", "Genotype")], by = c("ID", "Target.ID"))
+sum(dd_combined$Genotype.x != dd_combined$Genotype.y & dd_combined$Genotype.x != "NC")
+# Dilution 62.5pg in Run C only contains a single individual
+dd_combined <- genotype_HID$C.62.5[,c("ID", "Target.ID", "Genotype")] |> inner_join(genotype_HID$A.1000[,c("ID", "Target.ID", "Genotype")], by = c("ID", "Target.ID"))
+sum(dd_combined$Genotype.x != dd_combined$Genotype.y & dd_combined$Genotype.x != "NC")
+# And two of the sets with partial profiles have disagreements
+dd_combined <- genotype_HID$A.31.25[,c("ID", "Target.ID", "Genotype")] |> inner_join(genotype_HID$A.1000[,c("ID", "Target.ID", "Genotype")], by = c("ID", "Target.ID"))
+sum(dd_combined$Genotype.x != dd_combined$Genotype.y & dd_combined$Genotype.x != "NC" & dd_combined$Genotype.y != "NC")
+# Dilution 31.25pg in Run D only contains two individuals
+dd_combined <- genotype_HID$D.31.25[,c("ID", "Target.ID", "Genotype")] |> inner_join(genotype_HID$A.1000[,c("ID", "Target.ID", "Genotype")], by = c("ID", "Target.ID"))
+sum(dd_combined$Genotype.x != dd_combined$Genotype.y & dd_combined$Genotype.x != "NC" & dd_combined$Genotype.y != "NC")
+
+
+# Does any of the high concentration subdatasets that don't match A.1000 completely
+# have a complete match between each other:
+sum(genotype_HID$B.1000$Genotype != genotype_HID$C.250$Genotype & genotype_HID$B.1000$Genotype != "NC" & genotype_HID$C.250$Genotype != "NC")
+sum(genotype_HID$C.500$Genotype != genotype_HID$C.250$Genotype & genotype_HID$C.500$Genotype != "NC" & genotype_HID$C.250$Genotype != "NC")
+sum(genotype_HID$A.500$Genotype != genotype_HID$C.250$Genotype & genotype_HID$A.500$Genotype != "NC" & genotype_HID$C.250$Genotype != "NC")
+sum(genotype_HID$B.250$Genotype != genotype_HID$C.250$Genotype & genotype_HID$B.250$Genotype != "NC" & genotype_HID$C.250$Genotype != "NC")
+```
+
+
+# Data summaries
+Number of dilutions and runs where all 162 relevant markers were observed for all five individuals including no-calls (eighteen times)
+```{r}
+obs_geno <- sapply(genotype_HID, function(x){
+  x |> filter(!(Target.ID %in% c("rs7722456", "rs459920", "rs7251928"))) |> nrow()
+})
+sum(obs_geno == 5*162)
+```
+Number of dilutions and runs where all 162 relevant markers were observed for all five individuals excluding no-calls (six times).
+```{r}
+obs_geno <- sapply(genotype_HID, function(x){
+  x |> filter(!(Target.ID %in% c("rs7722456", "rs459920", "rs7251928")), Genotype != "NC", !is.na(Genotype)) |> nrow()
+})
+sum(obs_geno == 5*162)
+```
+Previously, we found complete agreement between dilution 1000 from run A, C, and D, which also matched dilution 500 from run B and D as well as dilution 250 from run D, i.e., we found six runs/dilutions that fully agreed on the Genotype-variable from the HID SNP Genotyper.
+We see that these six fully agreeing runs/dilutions are also the six subdatasets where all 5*162=810 SNPs are observed with no NCs:
+```{r}
+(fully_agreeing <- c("A.1000", "C.1000", "D.1000", "B.500", "D.500", "D.250"))
+(full_data <- names(obs_geno[obs_geno == 5*162]))
+sum(fully_agreeing %in% full_data)
+```
+
+
+
+# The HSG's NCs, WCs, Call rates, and accuracies for used data
+```{r}
+dd_GT_article <- readRDS(file.path("..", "data", "00_dd_GT.rds"))
+dd_GT_article <- dd_GT_article |> 
+  mutate(Genotype_EQC = threshold_rule(.data))
+dd_GT_2nd_article <- readRDS(file.path("..", "data", "00_dd_GT_2nd.rds"))
+dd_GT_2nd_article <- dd_GT_2nd_article |> 
+  mutate(Genotype_EQC = threshold_rule(.data))
+
+dd_GT_article_both <- bind_rows(dd_GT_article, dd_GT_2nd_article)
+
+(dd_hsg <- dd_GT_article_both |> 
+  mutate(Low_high = (Run == "a")*1) |> 
+  group_by(Dilution, Low_high) |> 
+  summarise("NCs" = sum(Genotype == "NC"),
+            "WCs" = sum(Genotype != "NC" & Genotype != Genotype_true),
+            "Tot_calls" = n(),
+#            "p_NC" = 100*round(NCs/Tot_calls, digits=4),
+#            "p_WC" = 100*round(WCs/Tot_calls, digits=4),
+            "Call rate" = 100*round((Tot_calls-NCs)/Tot_calls, digits=4),
+            "Accuracy" = 100*round((Tot_calls-NCs-WCs)/(Tot_calls-NCs), digits=4)) |> 
+  arrange(Low_high, desc(Dilution)) |> select(-Low_high))
+```
+
+# SMLR's NCs, WCs, Call rates, and accuracies for used data
+```{r}
+m_fit <- dd_GT_article_both |> filter(Dilution %in% c(50, 25)) |>
+  fit_symmetry_model2(f = sqrt, intercept = T, b_int = c(0, 1,-2))
+q <- 0.84
+
+dd_pred <- predict_prob_threshold(dd_GT_article_both, m_fit) |> 
+  mutate(WC_l = (Genotype_pred != no_call) & (Genotype_pred != Genotype_true)) |> 
+  split(~Dilution)
+
+dd_smlr_fixed_q <- dd_pred |> 
+  lapply(function(d) {
+    p <- d |> arrange(p_max) |> select(p_max, WC_l)
+    # hsg_nc <- dd_hsg |> ungroup() |> filter(Dilution == unique(d$Dilution)) |> select(NCs) |> unlist()
+    p_q <- p[p$p_max >= q,]
+    smlr_nc <- nrow(p[p$p_max < q,])
+    
+    data.frame("Low_high" = ("a" %in% d$Run)*1, "NCs" = smlr_nc, "WCs" = sum(p_q$WC_l), "Tot_calls" = nrow(p)) |> 
+      mutate("Call rate" = 100*round((Tot_calls-NCs)/Tot_calls, digits=4),
+             "Accuracy" = 100*round((Tot_calls-NCs-WCs)/(Tot_calls-NCs), digits=4))
+  }) |> bind_rows(.id = "Dilution") |> 
+  mutate(Dilution = as.numeric(Dilution)) |> 
+  arrange(Low_high, desc(Dilution)) |> select(-Low_high)
+
+rownames(dd_smlr_fixed_q) <- NULL
+dd_smlr_fixed_q
+```
+
+# Improvements for q=0.84
+```{r}
+select(dd_hsg, Dilution, Tot_calls, NC_hsg = NCs, WC_hsg = WCs) |> 
+  left_join(select(dd_smlr_fixed_q, Dilution, Tot_calls, NC_smlr = NCs, WC_smlr = WCs)) |> 
+  mutate(NC_improve = 100*round((NC_hsg-NC_smlr)/NC_hsg, digits=4),
+         WC_improve = 100*round((WC_hsg-WC_smlr)/WC_hsg, digits=4)) |> 
+  select(Dilution, Tot_calls, NC_hsg, NC_smlr, NC_improve, WC_hsg, WC_smlr, WC_improve)
+```
+
+# Improvements for aligned q
+NOTE:
+- To make fair and conservative comparisons of no-calls (or call rates), we want SMLR to have at least the same accuracy as HSG, i.e. the same number of WCs or fewer (sometimes WCs come in multiples for the same q-value, so we may not always be able to hit the same accuracies, but then we will hit an even higher accuracy, which implies having turned more observations into NCs, which favours the HSG in the call rate comparison).
+- To make fair and conservative comparisons of wrong calls (or accuracies), we want SMLR to have at least the same call rate as HSG, i.e. the same number of NCs or fewer (sometimes NCs come in multiples for the same q-value, so we may not always be able to hit the same call rates, but then we will hit an even higher call rate, which implies having turned fewer observations into NCs, which again implies a lower accuracy, thus favouring the HSG in the comparison of accuracy).
+```{r Table no-calls and wrong calls}
+dd_smlr_nc <- dd_pred |> 
+  lapply(function(d) {
+    hsg_wc <- dd_hsg |> ungroup() |> filter(Dilution == unique(d$Dilution)) |> select(WCs) |> unlist()
+    hsg_nc <- dd_hsg |> ungroup() |> filter(Dilution == unique(d$Dilution)) |> select(NCs) |> unlist()
+    p_cr <- d |> filter(WC_l) |> select(p_max, WC_l) |> arrange(desc(p_max)) |> mutate(WC_cum = cumsum(WC_l))
+    if (nrow(p_cr) > 0) {
+      q_same_wc <- p_cr |> filter(WC_cum <= hsg_wc) |> 
+      filter(WC_cum == max(WC_cum)) |> select(p_max) |> unlist()
+    # If there are more than one WC with p_max equal to q_same_wc, and this WC has a
+    # higher value at WC_cum, then we should select a higher p_max in order to make
+    # the SMLR to have at least the same accuracy as HSG.
+    # (but NOT if the raw SMLR (i.e. at q=0) in itself gave fewer WCs than the HSG)
+    if (nrow(p_cr) >= hsg_wc & any(filter(p_cr, WC_cum > hsg_wc)$p_max == q_same_wc)) {
+      q_same_wc <- p_cr |> filter(p_max > q_same_wc) |> 
+        filter(WC_cum == max(WC_cum)) |> select(p_max) |> unlist()
+    }
+    smlr_nc <- sum(d$p_max < q_same_wc)
+    } else {
+      q_same_wc <- 0
+      smlr_nc <- 0
+    }
+    smlr_wc <- d |> filter(p_max >= q_same_wc, WC_l) |> nrow()
+    
+    
+    data.frame("Low_high" = ("a" %in% d$Run)*1,
+               "Tot_calls" = nrow(d),
+               "HSG_NC" = hsg_nc,
+               "HSG_WC" = hsg_wc,
+               "q_same_WC" = q_same_wc,
+               "SMLR_call_rate" = 100*(nrow(d)-smlr_nc)/nrow(d),
+               "SMLR_NC" = smlr_nc,
+               "Improve_NC" = case_when(hsg_nc == 0 & smlr_nc == 0 ~ 0,
+                                        hsg_nc == 0 & smlr_nc > 0 ~ Inf,
+                                        .default = 100*(hsg_nc-smlr_nc)/hsg_nc))
+  }) |> bind_rows(.id = "Dilution") |> 
+  mutate(Dilution = as.numeric(Dilution)) |> 
+  arrange(Low_high, desc(Dilution)) |> select(-Low_high)
+rownames(dd_smlr_nc) <- NULL
+
+dd_smlr_wc <- dd_pred |> 
+  lapply(function(d) {
+    hsg_wc <- dd_hsg |> ungroup() |> filter(Dilution == unique(d$Dilution)) |> select(WCs) |> unlist()
+    hsg_nc <- dd_hsg |> ungroup() |> filter(Dilution == unique(d$Dilution)) |> select(NCs) |> unlist()
+    p_ac <- d |> arrange(p_max) |> select(p_max, WC_l) |> rownames_to_column("idx") |> mutate(idx = as.integer(idx))
+    q_same_nc <- p_ac |> filter(idx > hsg_nc) |>
+      filter(idx == min(idx)) |> select(p_max) |> unlist()
+    # Recall that we turn a SNP into an NC if its p_max falls short of q, i.e., we
+    # accept the prediction if p_max>=q and turn into NC if p_max<q.
+    # Since we want the same number of NCs as the HSG or fewer, then we only need
+    # to order according to p_max and extract p_max from the rownumber equal to hsg_nc.
+    # There will likely be more observations with this p_max on either side of this row,
+    # but since all of these are accepted as valid predictions (since p_max>=q_same_nc),
+    # then the p_max of this row is exactly the q_same_nc we are looking for, regardless
+    # of whether there are other observations with the same p_max and how these are arranged.
+    smlr_wc <- d |> filter(p_max >= q_same_nc, WC_l) |> nrow()
+    smlr_nc <- d |> filter(p_max < q_same_nc) |> nrow()
+    
+    data.frame("Low_high" = ("a" %in% d$Run)*1,
+               "Tot_calls" = nrow(d),
+               "HSG_NC" = hsg_nc,
+               "HSG_WC" = hsg_wc,
+               "q_same_NC" = q_same_nc,
+               "SMLR_accuracy" = 100*(nrow(d)-smlr_nc-smlr_wc)/(nrow(d)-smlr_nc),
+               "SMLR_WC" = smlr_wc,
+               "Improve_WC" = case_when(hsg_wc == 0 & smlr_wc == 0 ~ 0,
+                                        hsg_wc == 0 & smlr_wc > 0 ~ Inf,
+                                        .default = 100*(hsg_wc-smlr_wc)/hsg_wc))
+  }) |> bind_rows(.id = "Dilution") |> 
+  mutate(Dilution = as.numeric(Dilution)) |> 
+  arrange(Low_high, desc(Dilution)) |> select(-Low_high)
+rownames(dd_smlr_wc) <- NULL
+
+dd_smlr_nc_wc <- cbind(dd_smlr_nc, dd_smlr_wc[,5:8])
+
+
+
+ncwc.table <- t(dd_smlr_nc_wc) |> as.data.frame() |> rownames_to_column("V0")
+# colnames(ncwc.table) <- c("DNA quantity (pg)", unlist(ncwc.table[1,-1]))
+# ncwc.table <- ncwc.table |> filter(`DNA quantity (pg)` != "Dilution")
+# ncwc.table$`DNA quantity (pg)` <- c("Number of SNPs", "HSG no-calls", "HSG wrong calls", "q aligning WCs", "SMLR call rate", "SMLR no-calls", "NC-reduction (%)", "q aligning NCs", "SMLR accuracy", "SMLR wrong calls", "WC-reduction (%)")
+# ncwc.table <- column_to_rownames(ncwc.table, "DNA quantity (pg)")
+ncwc.table$V0 <- c("DNA quantity (pg)", "Number of SNPs", "HSG no-calls", "HSG wrong calls", "q aligning WCs", "SMLR call rate (%)", "SMLR no-calls", "NC-reduction", "q aligning NCs", "SMLR accuracy (%)", "SMLR wrong calls", "WC-reduction") # The (%) after the NC- and WC-reductions are easier to insert in the subsequent LaTeX-refinements
+
+# Digit matrix (initialised with zeros)
+d_mat <- matrix(0, nrow(ncwc.table), ncol(ncwc.table))
+# The first column should continue to be zeros, since it is inhabited with strings.
+# The following six rows (with integers) should continue to be zeros:
+# "DNA quantity (pg)", "Number of SNPs", "HSG no-calls", "HSG wrong calls",
+# "SMLR no-calls", "SMLR wrong calls", i.e. the row numbers 1, 2, 3, 4, 7, 11.
+# The first row with DNA quantities should be zeros for the integer values, and
+# only have the necessary digits for the DNA amounts 62.5, 31.25, 12.5, 6.25
+d_mat[1, ncwc.table[1,] %in% c(62.5, 12.5)] <- 1
+d_mat[1, ncwc.table[1,] %in% c(31.25, 6.25)] <- 2
+# The two rows with q-values (row 5 and 9) should have four digits, except when
+# the q-value is 0, in which case there should be zero digits, but this deviation
+# from the standard pattern is handled later:
+d_mat[c(5,9), 2:ncol(ncwc.table)] <- 4
+# The three rows with (SMLR) call rates, NC-reductions, and WC-reductions should
+# have one digit (i.e. row 6, 8, 12). Deviations from this are handled later.
+d_mat[c(6,8,12), 2:ncol(ncwc.table)] <- 1
+# Row number 10 with (SMLR) accuracies should have three digits (deviations are handled later).
+d_mat[10, 2:ncol(ncwc.table)] <- 3
+
+# Deviations from the standard digit pattern are where a zero value or a value
+# of 100 percentage points are prettier with zero digits:
+dev_mat <- matrix(F, nrow(ncwc.table), ncol(ncwc.table))
+dev_mat[c(5,9),] <- ncwc.table[c(5,9),] == 0 # q-thresholds to have zero digits
+dev_mat[c(6,8,10),] <- ncwc.table[c(6,8,10),] == 100 # Accuracies, call rates, and NC-reductions to have zero digits
+dev_mat[12,] <- ncwc.table[12,] == 0 | ncwc.table[12,] == 100 # WC-reductions to have zero digits
+d_mat[dev_mat] <- 0
+d_mat <- cbind(0, cbind(0, d_mat))
+ncwc.table <- cbind(NA, ncwc.table)
+
+ncwc.table <- xtable(ncwc.table,
+                     caption = "The SMLR model's genotyping improvements for all examined DNA quantities.",
+                     label = "tab:NC_WC",
+                     digits = d_mat)
+
+print(ncwc.table, file = file.path("..", "article-FSIGEN", "xtable1.tex"),
+      floating.environment = "table*",
+      table.placement = NULL,
+      caption.placement = "top",
+      format.args = list(big.mark = ",", decimal.mark = "."),
+      include.rownames = F, include.colnames = F, booktabs = T)
+```
+
+Additional table LaTeX-refinements
+```{r Table LaTeX-refinements}
+tab1 <- read_lines(file.path("..", "article-FSIGEN", "xtable1.tex"))
+
+tab1 <- c(tab1[3:6],
+          "\\vspace{1mm}",
+          "\\begin{adjustbox}{max width=\\textwidth}",
+          "\\begin{threeparttable}",
+          tab1[7], paste0(tab1[8], "[2pt]"),
+          "\\null & \\null & \\multicolumn{6}{c}{First series:} & \\multicolumn{4}{c}{Second series:} \\\\",
+          "\\null & \\null & \\multicolumn{6}{c}{5 individuals, 4 examinations} & \\multicolumn{4}{c}{18 individuals, 1 examination} \\\\",
+          "\\cmidrule(lr){3-8} \\cmidrule(lr){9-12}",
+          sub(" & DNA quantity (pg)", "\\multicolumn{2}{l}{DNA quantity (\\si{\\pg})}", tab1[10], fixed = TRUE),
+          sub("   & Number of SNPs", "\\multicolumn{2}{l}{Number of SNPs}", tab1[11], fixed = TRUE),
+          "\\midrule[2pt]",
+          sub("   & HSG no-calls", "\\multirow{2}{*}{HSG\\tnote{$*$}} & No-calls", tab1[12], fixed = TRUE),
+          sub("HSG wrong calls", "Wrong calls", tab1[13], fixed = TRUE),
+          "\\midrule[2pt]",
+          sub("   & q aligning WCs", "\\multirow{5}{*}{SMLR\\tnote{$\\dagger$}}  & $q$ aligning WCs", tab1[14], fixed = TRUE),
+          "\\cmidrule(lr){2-12}",
+          sub("SMLR call rate", "Call rate", tab1[15], fixed = TRUE),
+          sub("SMLR no-calls", "$\\text{No-calls}^{\\ddagger}$", tab1[16], fixed = TRUE),
+          sub("NC-reduction", "NC-reduction (\\%)\\tnote{$\\S$}", tab1[17], fixed = TRUE),
+          "\\midrule[2pt]",
+          sub("   & q aligning NCs", "\\multirow{5}{*}{SMLR\\tnote{$\\ddagger$}} & $q$ aligning NCs", tab1[18], fixed = TRUE),
+          "\\cmidrule(lr){2-12}",
+          sub("SMLR accuracy", "Accuracy", tab1[19], fixed = TRUE),
+          sub("SMLR wrong calls", "Wrong calls", tab1[20], fixed = TRUE),
+          sub("WC-reduction", "WC-reduction (\\%)\\tnote{$\\S$}", tab1[21], fixed = TRUE),
+          paste0(tab1[22], "[2pt]"),
+          tab1[23],
+          "\\begin{tablenotes}",
+          "\\item[$*$] Number of no-calls (NCs) and wrong calls (WCs) made by the HID SNP Genotyper Plugin (HSG).",
+          "\\item[$\\dagger$] The SMLR model's performance when $q$ is set to align WCs according to \\eqref{eq:metric_CR}.",
+          "\\item[$\\ddagger$] The SMLR model's performance when $q$ is set to align NCs according to \\eqref{eq:metric_AC}.",
+          "\\item[$\\S$] Results are conservative and based on the SMLR model with an intercept fitted to square-root transformed allele signals from examinations of \\SI{25}{\\pg} and \\SI{50}{\\pg} DNA.",
+          "\\end{tablenotes}",
+          "\\end{threeparttable}",
+          "\\end{adjustbox}",
+          tab1[24])
+
+write_lines(tab1, file.path("..", "article-FSIGEN", "table1.tex"))
+file.remove(file.path("..", "article-FSIGEN", "xtable1.tex"))
+```
+
+
+Relative to the HSG, the SMLR call rate and accuracy is increased by:
+```{r}
+dd_smlr_nc_wc |> 
+  mutate("CR_improvement" = ((Tot_calls-SMLR_NC)/Tot_calls - (Tot_calls - HSG_NC)/Tot_calls)*100,
+         "AC_improvement" = ((Tot_calls-SMLR_NC-SMLR_WC)/(Tot_calls-SMLR_NC) - (Tot_calls-HSG_NC-HSG_WC)/(Tot_calls-HSG_NC))*100) |> 
+  select(Dilution, Tot_calls, SMLR_call_rate, Improve_NC, SMLR_accuracy, Improve_WC, CR_improvement, AC_improvement)
+```
+
+
+# Het and hom WCs for the HSG
+```{r}
+dd_GT_article_both <- bind_rows(dd_GT_article[,1:26], dd_GT_2nd_article)
+all_WC_article <- dd_GT_article_both |> filter(Genotype != "NC", Genotype != Genotype_true)
+
+cat("Number of WCs:\n")
+all_WC_article |> nrow()
+cat("Number heterozygous of WCs:\n")
+all_WC_article |> filter(Genotype_true_AA == "A1A2") |> nrow()
+cat("Number homozygous of WCs:\n")
+all_WC_article |> filter(Genotype_true_AA != "A1A2") |> nrow()
+```
+
+# Heterozygous proportions
+```{r}
+N_het <- dd_GT_article |> filter(Dilution == 1000, Run == "C", Genotype_true_AA == "A1A2") |> nrow()
+N_tot <- dd_GT_article |> filter(Dilution == 1000, Run == "C") |> nrow()
+N_het/N_tot
+
+N_het_val <- dd_GT_2nd_article |> filter(Dilution == 50, Genotype_true_AA == "A1A2") |> nrow()
+N_tot_val <- dd_GT_2nd_article |> filter(Dilution == 50) |> nrow()
+N_het_val/N_tot_val
+```
+
+
+## Data QC
+### Noise or rare alleles?
+The 165 SNPs on the Precision ID Ancestry Panel are expected to be biallelic, i.e.
+for each marker, we only expect to see reads in two of the four channels.
+We will of course also see some noise, but hopefully nothing that makes us doubt
+whether we see a rare allele or just noise.
+A rare allele could be the case, if the noise signal has a size on the level of
+the signal for the allowable allele with the minimum signal when the true
+genotype is heterozygous (for the homozygous genotypes, we expect the allowable
+allele with the minimum signal to be comparable with noise).
+```{r}
+# The reads reads from the two non-expected channels will be called Noise, and
+# we then compute the ratio of Noise to the number of reads for the allowed
+# allele with the minimum number of reads.
+non_allowable_reads <- dd_GT_both |>
+  mutate(Noise = Coverage - A1.Reads - A2.Reads) |> 
+  filter(Noise > 0) |> 
+  mutate(Noise.to.min.allele = Noise / pmin(A1.Reads, A2.Reads)) |> 
+  mutate(Noise.to.max.allele = Noise / pmax(A1.Reads, A2.Reads))
+```
+
+We will now inspect the cases where the true genotype is heterozygous and the
+Noise-to-min-allele-ratio is larger than 0.5:
+```{r}
+nar_het <- non_allowable_reads |> 
+  filter(Noise.to.min.allele >= 0.5,
+         Genotype_true_AA == "A1A2")
+```
+This gives us 36 observations with "high noise", but all of the cases are for
+the three lowest dilutions (where we do expect drop out of alleles etc.),
+meaning that we didn't see any "high noise" for the dilutions with more DNA.
+Hence, since the noise levels for the heterozygous genotypes looks fine for the
+reasonable dilutions, there is no immediate indication, that any of our
+individuals should have a heterozygous genotype with a rare allele.
+
+We will now inspect the cases where the true genotype is homozygous, but for
+these observations, we do expect that the allele with the minimum signal will
+have reads close to zero, so the `Noise.to.min.allele` is a bad indicator.
+Thus, in order to reject the idea that a marker with "high noise" really was a
+heterozygous genotype with a rare allele, we have to rely on the majority of
+times that such a potential case was measured for the individual under consideration.
+```{r}
+# All heterozygous and homozygous in very high dilutions
+all_het <- dd_GT |> filter(Dilution %in% c(1000, 500),
+                           Genotype_true_AA == "A1A2") |> arrange(Ratio)
+all_hom <- dd_GT |> filter(Dilution %in% c(1000, 500),
+                           Genotype_true_AA != "A1A2") |> arrange(desc(Ratio))
+
+# Homozygous and heterozygous with "non-allowable-reads"
+# (more accurately with non-expected reads)
+nar_hom <- non_allowable_reads |> 
+  filter(Genotype_true_AA != "A1A2",
+         Noise.to.max.allele > max(all_hom$Ratio),
+         pmax(A1.Reads, A2.Reads) > 100)
+  
+dd_rare <- nar_hom |> group_by(ID, Target.ID) |> summarise("N" = n()) |> filter(N >= 3)
+nar_hom <- nar_hom |> inner_join(dd_rare, by = c("ID", "Target.ID")) |> 
+  arrange(ID, Target.ID, Dilution, Run)
+
+table(nar_hom$Target.ID)
+```
+Maybe the filtering-values should be chosen differently, but we do nevertheless note that rs7722456 appears quite frequently and also with Noise.to.max.allele that could rise suspicion towards the genotype being heterozygous with a rare allele.
+However, since this phenomenon is only seen in the "original" dilution series, and for all five individuals in the series, it also rises suspicion towards it being an artefact of that particular dataset.
+```{r}
+(dd_rs7722456 <- dd_GT |> filter(Target.ID == "rs7722456") |> 
+   select(ID, Run, Dilution, Genotype, QC, Genotype_true) |> 
+   arrange(desc(Dilution)))
+sum(dd_rs7722456$Genotype == "NC")
+```
+The adenine reads of rs7722456 could in principle be a rare allele with the adenine reads as the minor allele signal, so it is a problem that the HSG accepts it as a homozygous genotype without flagging it for any inspection.
+The SMLR model can be used to flag such a case or make it a no-call:
+```{r}
+dd_GT_rare <- dd_GT_both |> filter(Target.ID == "rs7722456") |> 
+  mutate(A1.Reads = A.Reads)
+dd_GT_rare$Dilution <- factor(dd_GT_rare$Dilution,
+                              levels = unique(dd_GT_rare$Dilution),
+                              labels = paste0(unique(dd_GT_rare$Dilution), "pg"))
+
+q <- 0.99
+dd_GT_rare <- predict_prob_threshold(dd_GT_rare, m_fit, q)
+
+b <- m_fit$par
+l2_t1.max_I <- uniroot(function(x) (-b[1]-b[3]*x)/b[2]-56.5, interval = c(0, 57))$root
+l1_root <- uniroot(function(x) (-b[1]-b[2]*x)/b[3], interval = c(-1, 1)*57)$root
+l2_root <- uniroot(function(x) (-b[1]-b[3]*x)/b[2], interval = c(-1, 1)*57)$root
+l1_l2_meet <- uniroot(function(x) (-b[1]-b[3]*x)/b[2] - (-b[1]-b[2]*x)/b[3], interval = c(-5, 5)*57)$root
+dd_lines1 <- data.frame(t1 = c(l1_root+10^(-6), l1_l2_meet+10^(-6), seq(from=0, to=57, length.out=63))) %>%
+  arrange(t1) %>%
+  filter(t1 >= 0) %>%
+  mutate(t2 = (-b[1]-b[2]*t1)/b[3], Model = "intercept")
+dd_lines2 <- data.frame(t1 = c(l2_root+10^(-6), l1_l2_meet+10^(-6), seq(from=0, to=l2_t1.max_I, length.out=63))) %>%
+  arrange(t1) %>%
+  filter(t1 >= 0) %>%
+  mutate(t2 = (-b[1]-b[3]*t1)/b[2], Model = "intercept")
+if (l1_l2_meet > 0) {
+  dd_lines1$t1[dd_lines1$t1 < l1_l2_meet] <- 0
+  dd_lines1$t2[dd_lines1$t2 < l1_l2_meet] <- 0
+  dd_lines2$t1[dd_lines2$t1 < l1_l2_meet] <- 0
+  dd_lines2$t2[dd_lines2$t2 < l1_l2_meet] <- 0
+}
+dd_lines1 <- dd_lines1 %>% filter(t1 >= 0)
+dd_lines2 <- dd_lines2 %>% filter(t2 >= 0)
+
+dd_bands <- band_line(bind_rows(dd_GT_rare, dd_GT_rare |> mutate(A1.Reads = A2.Reads, A2.Reads = A1.Reads)), model = m_fit, q_threshold = q, f = m_fit$f) %>%
+  mutate(Band = paste0("q = ", round(q, digits = 6)))
+
+dd_missed <- dd_GT_rare %>%
+  mutate(QC = if_else(is.na(QC), "", QC)) |> 
+  mutate("MAF-flag" =if_else(QC == "_MAF;", "HSG", "")) |> 
+  filter(`MAF-flag` == "HSG")
+
+(pm <- ggplot(dd_GT_rare, aes(x = m_fit$f(A1.Reads), y = m_fit$f(A2.Reads))) +
+  geom_polygon(aes(x=x, y=y, fill = Band), data = dd_bands) +
+  scale_fill_manual(name = "Threshold",
+                    values = "grey75",
+                    labels = unname(c(TeX(paste0("q = ", round(q, digits = 6)))))) +
+  geom_line(aes(x=t1, y=t2, linetype=Model), data = dd_lines1) +
+  geom_line(aes(x=t1, y=t2, linetype=Model), data = dd_lines2) +
+  scale_linetype_manual(values = "solid",
+                        labels = unname(TeX("$\\beta_0 \\neq 0$"))) +
+  geom_point(aes(colour = Genotype_true_AA), size = 1) +
+  geom_point(aes(colour = Genotype_true_AA), data = dd_missed, size = 1) +
+  scale_colour_manual(name="Rare genotype",
+                      values=c("turquoise"),
+                      breaks=c("A2A2"),
+                      labels=unname(c(TeX("$a_1 a_2$ or $a_2 a_2$?")))) +
+  # coord_cartesian(xlim=c(0,0.15),ylim=c(0,0.15))+
+  xlab(TeX("$\\sqrt{s_1}$")) + ylab(TeX("$\\sqrt{s_2}$")) +
+  # geoms below will use another colour scale
+  new_scale_color() +
+  geom_point(aes(shape = `MAF-flag`, colour = `MAF-flag`), data = dd_missed) + 
+  scale_shape_manual(values = c(4,3)) +
+  scale_colour_manual(name="MAF-flag",
+                      values="red",
+                      breaks="HSG") +
+  coord_fixed(xlim = c(2,53.8), ylim = c(2,54)))
+
+(pm2 <- pm + facet_wrap(vars(Dilution)) +
+    theme(strip.text.x.top = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.title = element_text(size = legend_title_size),
+        legend.text = element_text(size = legend_text_size),
+        legend.key.size = unit(3, 'mm'),
+        legend.margin = margin(t=4.5, r=0, b=4.5, l=5.5, unit = 'pt'),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "grey92"),
+        plot.margin = margin(t=0, r=0, b=0, l=0, unit='pt')))
+
+ggsave(filename = file.path("..", "article-FSIGEN", "FIG_S3-1.5-column.bmp"),
+       plot = pm2, device = "bmp", width = 5512, height = 3530, units = "px", dpi = 1000)
+
+```
+
+## Number of MAF flags for rs7722456
+```{r}
+dd_GT_rare |> nrow()
+6*5*2 + 5*5 + 2 + 4*5 + 1
+dd_GT_rare |> select(QC) |> filter(!is.na(QC)) |> filter(QC == "_MAF;") |> nrow()
+sum(dd_missed$`MAF-flag` == "HSG")
+sum(dd_GT_rare$Genotype_pred == "NC")
+
+QC <- dd_GT_rare |> group_by(Dilution) |> summarise("Total" = n())
+QC <- dd_GT_rare |> filter(!is.na(QC)) |> group_by(Dilution) |> summarise("MAF-flags" = sum(QC == "_MAF;")) |> inner_join(QC, by = "Dilution")
+QC$MAF_pct <- round(100*QC$`MAF-flags`/QC$Total, digits = 3)
+QC
+```
+
+
+
+# Are any SNP positions more prone to become WCs or NCs than others?
+```{r}
+dd_WC <- dd_GT_both |> filter(Genotype != Genotype_true & Genotype != "NC")
+dd_NC <- dd_GT_both |> filter(Genotype != "NC")
+
+tbl_WC <- table(dd_WC$Target.ID)
+tbl_NC <- table(dd_NC$Target.ID)
+# tbl_WC <- tbl_WC[order(as.integer(substring(names(tbl_WC), 3)))]
+# tbl_NC <- tbl_NC[order(as.integer(substring(names(tbl_NC), 3)))]
+
+plot(1:length(tbl_WC), unname(tbl_WC))
+plot(1:length(tbl_NC), unname(tbl_NC))
+tbl_WC[order(tbl_WC, decreasing = T)]
+tbl_NC[order(tbl_NC, decreasing = T)]
+# names(tbl_WC)[order(as.integer(substring(names(tbl_WC), 3)))]
+```
+
+
+
+# Deviation of slope and intercept for cases with and without complete separation
+```{r}
+df_boot_NI50 <- readRDS(file.path("..", "data", "01_obj_bootstrap_sqrt_1K.rds")) |> 
+  filter(Dilution == "50pg")
+df_boot_NI50_CS <- df_boot_NI50 |> filter(n_WC == 0)
+df_boot_NI50 <- df_boot_NI50 |> filter(n_WC > 0)
+
+df_boot50 <- readRDS(file.path("..", "data", "01_obj_bootstrap_sqrt_1K.rds")) |> 
+  filter(Dilution == "50pg")
+df_boot50_CS <- df_boot50 |> filter(n_WC == 0)
+df_boot50 <- df_boot50 |> filter(n_WC > 0)
+```
+
+## Standard deviation of model with no intercept
+```{r}
+cat("Complete separation (slope):\n")
+var(df_boot_NI50_CS$beta1/df_boot_NI50_CS$beta2)
+cat("Overlapping data (slope):\n")
+var(df_boot_NI50$beta1/df_boot_NI50$beta2)
+
+cat("Complete separation (slope):\n")
+var(df_boot_NI50_CS$beta2/df_boot_NI50_CS$beta1)
+cat("Overlapping data (slope):\n")
+var(df_boot_NI50$beta2/df_boot_NI50$beta1)
+```
+
+## Standard deviation of intercept-model
+```{r}
+cat("Complete separation (intercept):\n")
+var(df_boot50_CS$beta0/df_boot50_CS$beta1)
+cat("Overlapping data (intercept):\n")
+var(df_boot50$beta0/df_boot50$beta1)
+
+cat("Complete separation (intercept):\n")
+var(df_boot50_CS$beta0/df_boot50_CS$beta2)
+cat("Overlapping data (intercept):\n")
+var(df_boot50$beta0/df_boot50$beta2)
+
+cat("Complete separation (slope):\n")
+var(df_boot50_CS$beta1/df_boot50_CS$beta2)
+cat("Overlapping data (slope):\n")
+var(df_boot50$beta1/df_boot50$beta2)
+
+cat("Complete separation (slope):\n")
+var(df_boot50_CS$beta2/df_boot50_CS$beta1)
+cat("Overlapping data (slope):\n")
+var(df_boot50$beta2/df_boot50$beta1)
+```
+
+
+# Range of reduction in NCs
+```{r}
+df_red_HSG_low <- readRDS(file.path("..", "data", "02-obj-NNred-HSG-sqrt_NI-low.rds"))[-c(9, 11)]
+df_red_HSG_high <- readRDS(file.path("..", "data", "02-obj-NNred-HSG-sqrt_NI-high.rds"))[-c(9, 11)]
+
+cat("HSG (low):\n")
+quantile(as.matrix(df_red_HSG_low), probs = c(0.25, 0.5, 0.75))
+
+cat("HSG (high):\n")
+quantile(as.matrix(df_red_HSG_high), probs = c(0.25, 0.5, 0.75))
+```
+
+```{r}
+cat("HSG low:\n")
+for (i in df_red_HSG_low) {
+  print(quantile(i, probs = c(0.25, 0.5, 0.75)))
+}
+
+cat("HSG high:\n")
+cat("100% for all quantiles in all cross-validations!\n")
+# for (i in df_red_HSG_high) {
+#   print(quantile(i, probs = c(0.25, 0.5, 0.75)))
+# }
+```
+
+```{r}
+red_HSG_high <- as.vector(as.matrix(df_red_HSG_high))
+red_HSG_high <- red_HSG_high[order(red_HSG_high)]
+sum(red_HSG_high < 1) / length(red_HSG_high)
+```
+
