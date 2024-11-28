@@ -1,10 +1,14 @@
 # SMLR-Genotyping
 This repository contains all analysis, figure, and table generation scripts for the article: \
 'Enhanced SNP Genotyping with Symmetric Multinomial Logistic Regression' \
-[DOI: XXXXX]
+(preprint submitted to bioRxiv, DOI: XXXX)
 
-The repository is permanently stored at Zenodo. \
-[DOI: YYYYY]
+(submitted for review at Forensic Science International: Genetics) \
+[DOI: to be updated if accepted]
+
+The repository is published on GitHub and preserved on Zenodo. \
+[https://github.com/maltebn/SMLR-Genotyping.git] \
+[DOI: 10.5281/zenodo.14176720]
 
 ## Overview of scripts
 ### 00_functions_and_global_definitions.R
