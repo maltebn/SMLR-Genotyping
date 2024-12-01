@@ -1,7 +1,7 @@
 # SMLR-Genotyping
 This repository contains all analysis, figure, and table generation scripts for the article: \
 'Enhanced SNP Genotyping with Symmetric Multinomial Logistic Regression' \
-(preprint submitted to bioRxiv, DOI: XXXX)
+(preprint submitted to bioRxiv, DOI: https://doi.org/10.1101/2024.11.28.625807)
 
 (submitted for review at Forensic Science International: Genetics) \
 [DOI: to be updated if accepted]
