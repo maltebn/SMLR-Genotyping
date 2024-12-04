@@ -1,0 +1,40 @@
+% Shared preamble for Enhanced-SNP-Genotyping-with-SMLR.tex and supplementary-material.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{subfiles}
+
+% For cross-referencing between two independent documents (e.g. main article and supplementary material)
+% Each document's aux-file contains information about the references used in that document, so by
+% using \externaldocument{supplementary_material} we can link to the supplementary material aux file and
+% in that way use reference labels created in another document.
+\usepackage{xr}
+
+%% Defines \sfrac{}{} for slanted fractions:
+\usepackage{xfrac}
+
+%% Defines \mathclap{...} for elimination of horizontal whitespace created by e.g. a long subscript under a summation:
+\usepackage{mathtools} % note: mathtools loads amsmath
+
+%% The siunitx package provides a set of tools to typeset quantities in a consistent way:
+% a useful command is \qty{<number>}{<unit>} which writes the quantity as a product of
+% the number and the unit, so the space here is formally showing multiplication, and it
+% is smaller than a standard space, which makes it look prettier.
+\usepackage{siunitx}
+
+%% Make the standard latex tables look so much better:
+\usepackage{array,booktabs}
+\usepackage{multirow}
+\usepackage{threeparttable}
+
+%% Make landscape pages display as landscape. (Ideal for pages to be read on a screen)
+\usepackage{pdflscape}
+
+%% A better approach to resize e.g. tables to text width
+%% See: https://tex.stackexchange.com/questions/121155/how-to-adjust-a-table-to-fit-on-page
+\usepackage{adjustbox}
+
+%% Extensive control of page headers and footers
+\usepackage{fancyhdr}
+
+%% To handle the formatting of special characters in urls, e.g. in the .bib files, use either the hyperref- or url-package
+\usepackage{url}
+\usepackage{doi}

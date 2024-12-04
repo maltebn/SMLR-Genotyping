@@ -1,0 +1,21 @@
+This folder contains the four tex-files:
+- Enhanced-SNP-Genotyping-with-SMLR.tex
+- table1.tex
+- supplementary-material.tex
+- preamble.tex
+
+The file 'table1.tex' is included in 'Enhanced-SNP-Genotyping-with-SMLR.tex' by use of 'subfiles'.
+
+The two files 'Enhanced-SNP-Genotyping-with-SMLR.tex' and 'supplementary-material.tex' are independent documents both using the same preamble defined in 'preamble.tex' (both documents has a '\input{preamble}' before their '\begin{document}').
+However, the two "independent" documents do refer to each others equations and figures.
+To make this cross-referencing possible, the preamble contains the package 'xr' and each document looks into the other document's aux-file by:
+- "Enhanced-SNP-Genotyping-with-SMLR.tex" has a '\externaldocument{supplementary-material}' before its '\begin{document}'.
+
+- "supplementary-material" has a '\externaldocument{Enhanced-SNP-Genotyping-with-SMLR.tex}' before its '\begin{document}'.
+
+Since both documents refer to each other, at least one of the documents has to be re-compiled after compilation of the other, e.g.:
+- Compile 'supplementary-material.tex'
+- Compile 'Enhanced-SNP-Genotyping-with-SMLR.tex'
+- Build bbl-file (BibTeX)
+- Compile 'Enhanced-SNP-Genotyping-with-SMLR.tex' twice to get bibliography
+- Re-compile 'supplementary-material.tex'
