@@ -109,7 +109,7 @@ While amplification-based genotyping tools, such as the HID SNP Genotyper Plugin
 To reduce the number of wrong calls~(WCs), it seems natural to declare a no-call~(NC) for genotypes not passing the quality checks~(QCs) provided by the HSG.
 However, for low amounts of input DNA, this approach significantly decreases the call rate and still struggles to filter out WCs.
 
-In a recent study, Mostad et al.~\cite{mostad} present a probabilistic approach to handle missing data (no-calls) in low-coverage sequencing, where they integrate genotype likelihoods directly into computations on familial relationships.
+In a recent article, Mostad et al.~\cite{mostad} present a probabilistic approach to handle missing data (no-calls) in low-coverage sequencing, where they integrate genotype likelihoods directly into computations on familial relationships.
 At a given locus, they compute the probability of the observed data by conditioning on and summing over relevant combinations of alleles.
 In this way, they do not need to deal with genotype classification and effectively avoid potential misclassified genotypes.
 They compare this relationship-classification approach to a version in which genotypes are called using the maximal posterior genotype probability obtained by combining their genotype likelihoods with prior probabilities of the genotypes (based on allele frequencies).
@@ -154,7 +154,7 @@ Therefore, Enforcing the Quality Checks~(EQC) by turning genotypes with QC flags
 
 
 \subsection{The observational model by Mostad, Tillmar, and Kling}
-In a recent article~\cite{mostad}, Mostad et al. define a model for the observed counts $c = (c_A, c_C, c_G, c_T)$ at each nucleotide.
+In the article~\cite{mostad}, Mostad et al. define a model for the observed counts $c = (c_A, c_C, c_G, c_T)$ at each nucleotide.
 With the phased genotype denoted by $g = (g_1, g_2)$, they introduce the proportion, $\pi = k/m$, of DNA amplicons from $g_1$, where $m$ represents the approximate number of DNA templates before PCR, and $k \sim \text{Binomial}\left(m, 1/2\right)$.
 They then model $c \mid \pi, g \sim \text{Multinomial}\left(\sum_i c_i, p\right)$ with $p = (p_A, p_C, p_G, p_T)$ and
 \begin{align*}
