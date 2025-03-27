@@ -530,7 +530,7 @@ WC_reductions_high[,2:11] <- WC_reductions_high[,2:11]*100
   geom_hline(yintercept = 0, lty = "dashed") + 
   geom_line(show.legend = F) +
   coord_cartesian(ylim = c(-50, 100)) +
-  ggtitle("25pg, 50pg\n62.5–250pg") +
+  ggtitle("Fit: 25pg, 50pg\nTest: 62.5–250pg") +
   theme_bw() +
   theme(axis.ticks.x=element_blank(),
         axis.text.x=element_blank(),
