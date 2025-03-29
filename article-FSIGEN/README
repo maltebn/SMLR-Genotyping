@@ -19,3 +19,10 @@ Since both documents refer to each other, at least one of the documents has to b
 - Build bbl-file (BibTeX)
 - Compile 'Enhanced-SNP-Genotyping-with-SMLR.tex' twice to get bibliography
 - Re-compile 'supplementary-material.tex'
+
+When uploading source code to e.g. arXiv's or Elsevier's servers, be sure to include the bbl-file (at least for arXiv) and the precompiled aux-files for each document.
+This should allow the servers to build the pdf for the main article without problems.
+
+The pdf with the supplementary material should probably be uploaded as a pdf and not as source code.
+I'm not sure yet, but the two mentioned servers don't seem to be set up for building other than the main article, and since Elsevier says that the main article and the supplementary material should be separated, uploading the supplementary material as a precompiled pdf seems to be the only option.
+(Elsevier wants to be able to standardize the visual look of the main article, but cares less about the supplementary material, since this is not be printed in the journal. This explains why they accept supplementary material to be less editable)
