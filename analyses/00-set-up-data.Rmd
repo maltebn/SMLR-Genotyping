@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 
 ```{r Loading libraries, message=FALSE, include=FALSE}
 library(tidyverse)
-source(file.path("..", "analyses", "00_functions_and_global_definitions.R"))
+source("00-functions-and-global-definitions.R")
 ```
 
 ```{r Loading data from first DNA dilution series, message=FALSE, include=FALSE}

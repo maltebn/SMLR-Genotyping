@@ -1,6 +1,6 @@
 library(tidyverse)
 library(future.apply)
-source("00_functions_and_global_definitions.R")
+source("00-functions-and-global-definitions.R")
 
 workers <- floor(availableCores()[[1]]*3/4)
 plan(multisession, workers = workers)

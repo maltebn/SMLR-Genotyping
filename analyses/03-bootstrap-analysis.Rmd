@@ -11,7 +11,7 @@ library(tidyverse)
 library(ggnewscale) # Enables multiple colour- and fill-scales
 library(latex2exp)
 library(patchwork)
-source("00_functions_and_global_definitions.R")
+source("00-functions-and-global-definitions.R")
 
 plot_title_size <- 7
 axis_title_size <- 7

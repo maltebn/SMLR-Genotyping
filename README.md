@@ -11,37 +11,41 @@ The repository is published on GitHub and preserved on Zenodo. \
 [DOI: 10.5281/zenodo.14176720]
 
 ## Overview of scripts
-### 00_functions_and_global_definitions.R
+### 00-functions-and-global-definitions.R
 Defines functions and global objects to be used throughout the scripts.
 
 ### 00-set-up-data.Rmd
 Prepares the raw data files for further analysis.
 
-### 01_bootstrap.R
-Generates objects with bootstrap results (and writes them to the disk).
-Best to be run on a server.
+### 01-Mostad-models.Rmd
+Exploration/selection of parameter settings for the observational model by Mostad, Tillmar, and Kling (MTK).
+Using these to predict MTK genotypes within each dilution level.
 
-### 01_crossval_custom.R
-Generates objects with cross-validation results (and writes them to the disk).
-Best to be run on a server.
+### 02-bootstrap.R
+Generates objects with bootstrap results.
+Long run time: use server.
 
-### 02_Bootstrap_FSI_final.Rmd
+### 02-crossval-custom.R
+Generates objects with cross-validation results.
+Long run time: use server.
+
+### 03-bootstrap-analysis.Rmd
 Analyse bootstrap results and generates Supplementary Figure S1.
 
-### 02_cross_validations_FSI_final.Rmd
+### 03-cross-validation-analysis.Rmd
 Analyse cross-validation results and generates Supplementary Figure S2.
 As part of this, the additional data objects are written to the disk.
 
-### 03_accuracy-and-call-rate_FSI_final.Rmd
+### 04-accuracy-and-call-rate.Rmd
 Analyse cross-validation results and generates Figure 3 and Figure 4.
 
-### 03_plot_HID_all_relevant_dils_FSI_final.Rmd
+### 04-plot-HSG-all-relevant-dils.Rmd
 Generates Figure 1 and Figure 2.
 
-### 03-summary-statistics-and-tables_FSI_final.Rmd
-Generates Table 1 and Supplementary Figure S3.
+### 04-summary-statistics-and-tables.Rmd
+Generates Table 1, Supplementary Figure S3, and Supplementary Figure S4.
 
-### 04-convert-bmp-to-jpeg.sh
+### 05-convert-bmp-to-jpeg.sh
 Converts figures from the bmp-format to jpeg-format.
 While R is capable of directly saving plots as jpeg-files, this approach unfortunately made the subscripts on some axis titles look weird.
 This was also the case for the possible png- and pdf-format.
