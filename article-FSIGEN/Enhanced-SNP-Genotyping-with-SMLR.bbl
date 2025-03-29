@@ -5,6 +5,102 @@
 \expandafter\ifx\csname href\endcsname\relax
   \def\href#1#2{#2} \def\path#1{#1}\fi
 
+\bibitem{alasfi}
+M.~Al-Asfi, D.~McNevin, B.~Mehta, D.~Power, M.~E. Gahan, R.~Daniel, Assessment
+  of the {Precision ID Ancestry panel}, {International Journal of Legal
+  Medicine} 132~(6) (2018) 1581--1594.
+\newblock \href {https://doi.org/https://doi.org/10.1007/s00414-018-1785-9}
+  {\path{doi:https://doi.org/10.1007/s00414-018-1785-9}}.
+
+\bibitem{mostad}
+P.~Mostad, A.~Tillmar, D.~Kling, Improved computations for relationship
+  inference using low-coverage sequencing data, BMC bioinformatics 24~(1) (mar
+  2023).
+\newblock \href {https://doi.org/https://doi.org/10.1186/s12859-023-05217-z}
+  {\path{doi:https://doi.org/10.1186/s12859-023-05217-z}}.
+
+\bibitem{butler}
+J.~M. Butler, Advanced Topics in Forensic DNA Typing: Methodology, 3rd Edition,
+  Academic Press, 2012.
+\newblock \href {https://doi.org/https://doi.org/10.1016/C2011-0-04189-3}
+  {\path{doi:https://doi.org/10.1016/C2011-0-04189-3}}.
+
+\bibitem{swgdam}
+{Scientific Working Group on DNA Analysis Methods (SWGDAM)},
+  \href{https://www.swgdam.org/publications}{{SWGDAM Interpretation Guidelines
+  for Single Nucleotide Polymorphism (SNP) Analysis by Forensic DNA Testing
+  Laboratories}}, Guidelines, SWGDAM (jan 2024).
+\newline\urlprefix\url{https://www.swgdam.org/publications}
+
+\bibitem{hid}
+{Thermo Fisher Scientific},
+  \href{https://assets.thermofisher.com/TFS-Assets/LSG/manuals/MAN0010641_HIDSNP_Genotyper_Plugin.pdf}{{HID
+  SNP} Genotyper Plugin User Guide}, {Life Technologies Corporation}, Carlsbad,
+  CA, USA, v5.2.2 Edition, publication Number: {MAN0010641}, Revision: {D.0}
+  (2017).
+\newline\urlprefix\url{https://assets.thermofisher.com/TFS-Assets/LSG/manuals/MAN0010641_HIDSNP_Genotyper_Plugin.pdf}
+
+\bibitem{agresti}
+A.~Agresti, Categorical Data Analysis, 3rd Edition, Vol. 792 of {Wiley Series
+  in Probability and Statistics}, Wiley, Somerset, 2013.
+
+\bibitem{albert}
+A.~Albert, J.~A. Anderson, \href{https://www.jstor.org/stable/2336390}{On the
+  existence of maximum likelihood estimates in logistic regression models},
+  Biometrika 71~(1) (1984) 1--10.
+\newblock \href {https://doi.org/https://doi.org/10.1093/biomet/71.1.1}
+  {\path{doi:https://doi.org/10.1093/biomet/71.1.1}}.
+\newline\urlprefix\url{https://www.jstor.org/stable/2336390}
+
+\bibitem{lesaffre}
+E.~Lesaffre, A.~Albert, \href{https://www.jstor.org/stable/2345845}{Partial
+  separation in logistic discrimination}, {Journal of the Royal Statistical
+  Society: Series B (Methodological)} 51~(1) (1989) 109--116.
+\newblock \href
+  {https://doi.org/https://doi.org/10.1111/j.2517-6161.1989.tb01752.x}
+  {\path{doi:https://doi.org/10.1111/j.2517-6161.1989.tb01752.x}}.
+\newline\urlprefix\url{https://www.jstor.org/stable/2345845}
+
+\bibitem{efron}
+B.~Efron, \href{https://www.jstor.org/stable/2958830}{Bootstrap methods:
+  Another look at the jackknife}, {The Annals of Statistics} 7~(1) (1979)
+  1--26.
+\newblock \href {https://doi.org/https://doi.org/10.1214/aos/1176344552}
+  {\path{doi:https://doi.org/10.1214/aos/1176344552}}.
+\newline\urlprefix\url{https://www.jstor.org/stable/2958830}
+
+\bibitem{shmueli}
+G.~Shmueli, To explain or to predict?, Statistical science 25~(3) (2010)
+  289--310.
+\newblock \href {https://doi.org/https://doi.org/10.1214/10-STS330}
+  {\path{doi:https://doi.org/10.1214/10-STS330}}.
+
+\bibitem{bartlett}
+M.~S. Bartlett, \href{https://www.jstor.org/stable/3001536}{The use of
+  transformations}, Biometrics 3 (1947) 39--52.
+\newblock \href {https://doi.org/https://doi.org/10.2307/3001536}
+  {\path{doi:https://doi.org/10.2307/3001536}}.
+\newline\urlprefix\url{https://www.jstor.org/stable/3001536}
+
+\bibitem{stone}
+M.~Stone, \href{https://www.jstor.org/stable/2984809}{Cross-validatory choice
+  and assessment of statistical predictions}, {Journal of the Royal Statistical
+  Society: Series B (Methodological)} 36~(2) (1974) 111--147.
+\newblock \href
+  {https://doi.org/https://doi.org/10.1111/j.2517-6161.1974.tb00994.x}
+  {\path{doi:https://doi.org/10.1111/j.2517-6161.1974.tb00994.x}}.
+\newline\urlprefix\url{https://www.jstor.org/stable/2984809}
+
+\bibitem{picard}
+R.~R. Picard, R.~D. Cook,
+  \href{https://www.jstor.org/stable/2288403}{Cross-validation of regression
+  models}, {Journal of the American Statistical Association} 79~(387) (1984)
+  575--583.
+\newblock \href
+  {https://doi.org/https://doi.org/10.1080/01621459.1984.10478083}
+  {\path{doi:https://doi.org/10.1080/01621459.1984.10478083}}.
+\newline\urlprefix\url{https://www.jstor.org/stable/2288403}
+
 \bibitem{r}
 {R Core Team}, \href{https://www.R-project.org}{R: A Language and Environment
   for Statistical Computing}, {R Foundation for Statistical Computing}, Vienna,
@@ -84,69 +180,6 @@ M.~B. Nielsen,
   {\path{doi:10.5281/zenodo.14176720}}.
 \newline\urlprefix\url{https://github.com/maltebn/SMLR-Genotyping.git}
 
-\bibitem{hid}
-{Thermo Fisher Scientific},
-  \href{https://assets.thermofisher.com/TFS-Assets/LSG/manuals/MAN0010641_HIDSNP_Genotyper_Plugin.pdf}{{HID
-  SNP} Genotyper Plugin User Guide}, {Life Technologies Corporation}, Carlsbad,
-  CA, USA, v5.2.2 Edition, publication Number: {MAN0010641}, Revision: {D.0}
-  (2017).
-\newline\urlprefix\url{https://assets.thermofisher.com/TFS-Assets/LSG/manuals/MAN0010641_HIDSNP_Genotyper_Plugin.pdf}
-
-\bibitem{agresti}
-A.~Agresti, Categorical Data Analysis, 3rd Edition, Vol. 792 of {Wiley Series
-  in Probability and Statistics}, Wiley, Somerset, 2013.
-
-\bibitem{albert}
-A.~Albert, J.~A. Anderson, \href{https://www.jstor.org/stable/2336390}{On the
-  existence of maximum likelihood estimates in logistic regression models},
-  Biometrika 71~(1) (1984) 1--10.
-\newblock \href {https://doi.org/https://doi.org/10.1093/biomet/71.1.1}
-  {\path{doi:https://doi.org/10.1093/biomet/71.1.1}}.
-\newline\urlprefix\url{https://www.jstor.org/stable/2336390}
-
-\bibitem{lesaffre}
-E.~Lesaffre, A.~Albert, \href{https://www.jstor.org/stable/2345845}{Partial
-  separation in logistic discrimination}, {Journal of the Royal Statistical
-  Society: Series B (Methodological)} 51~(1) (1989) 109--116.
-\newblock \href
-  {https://doi.org/https://doi.org/10.1111/j.2517-6161.1989.tb01752.x}
-  {\path{doi:https://doi.org/10.1111/j.2517-6161.1989.tb01752.x}}.
-\newline\urlprefix\url{https://www.jstor.org/stable/2345845}
-
-\bibitem{efron}
-B.~Efron, \href{https://www.jstor.org/stable/2958830}{Bootstrap methods:
-  Another look at the jackknife}, {The Annals of Statistics} 7~(1) (1979)
-  1--26.
-\newblock \href {https://doi.org/https://doi.org/10.1214/aos/1176344552}
-  {\path{doi:https://doi.org/10.1214/aos/1176344552}}.
-\newline\urlprefix\url{https://www.jstor.org/stable/2958830}
-
-\bibitem{bartlett}
-M.~S. Bartlett, \href{https://www.jstor.org/stable/3001536}{The use of
-  transformations}, Biometrics 3 (1947) 39--52.
-\newblock \href {https://doi.org/https://doi.org/10.2307/3001536}
-  {\path{doi:https://doi.org/10.2307/3001536}}.
-\newline\urlprefix\url{https://www.jstor.org/stable/3001536}
-
-\bibitem{stone}
-M.~Stone, \href{https://www.jstor.org/stable/2984809}{Cross-validatory choice
-  and assessment of statistical predictions}, {Journal of the Royal Statistical
-  Society: Series B (Methodological)} 36~(2) (1974) 111--147.
-\newblock \href
-  {https://doi.org/https://doi.org/10.1111/j.2517-6161.1974.tb00994.x}
-  {\path{doi:https://doi.org/10.1111/j.2517-6161.1974.tb00994.x}}.
-\newline\urlprefix\url{https://www.jstor.org/stable/2984809}
-
-\bibitem{picard}
-R.~R. Picard, R.~D. Cook,
-  \href{https://www.jstor.org/stable/2288403}{Cross-validation of regression
-  models}, {Journal of the American Statistical Association} 79~(387) (1984)
-  575--583.
-\newblock \href
-  {https://doi.org/https://doi.org/10.1080/01621459.1984.10478083}
-  {\path{doi:https://doi.org/10.1080/01621459.1984.10478083}}.
-\newline\urlprefix\url{https://www.jstor.org/stable/2288403}
-
 \bibitem{pereira}
 V.~Pereira, H.~S. Mogensen, C.~Børsting, N.~Morling, Evaluation of the
   {Precision ID Ancestry Panel} for crime case work: A {SNP} typing assay
@@ -154,13 +187,6 @@ V.~Pereira, H.~S. Mogensen, C.~Børsting, N.~Morling, Evaluation of the
   International: Genetics} 28 (2017) 138--145.
 \newblock \href {https://doi.org/https://doi.org/10.1016/j.fsigen.2017.02.013}
   {\path{doi:https://doi.org/10.1016/j.fsigen.2017.02.013}}.
-
-\bibitem{alasfi}
-M.~Al-Asfi, D.~McNevin, B.~Mehta, D.~Power, M.~E. Gahan, R.~Daniel, Assessment
-  of the {Precision ID Ancestry panel}, {International Journal of Legal
-  Medicine} 132~(6) (2018) 1581--1594.
-\newblock \href {https://doi.org/https://doi.org/10.1007/s00414-018-1785-9}
-  {\path{doi:https://doi.org/10.1007/s00414-018-1785-9}}.
 
 \bibitem{tvede18}
 T.~Tvedebrink, P.~S. Eriksen, H.~S. Mogensen, N.~Morling, Weight of the

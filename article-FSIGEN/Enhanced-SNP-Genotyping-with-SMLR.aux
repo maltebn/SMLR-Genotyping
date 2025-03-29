@@ -9,85 +9,101 @@
 \emailauthor{mikl@math.aau.dk}{Mikkel M. Andersen}
 \providecommand \oddpage@label [2]{}
 \Newlabel{cor1}{1}
-\citation{r,tidyverse1,tidyverse2,future1,future2,futureapply,xtable}
-\citation{imagemagick,ggplot,ggnewscale,latex2exp,patchwork}
-\citation{scripts}
+\citation{alasfi,mostad,butler,swgdam}
+\citation{mostad}
 \Newlabel{AAU}{a}
 \Newlabel{KU}{b}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \citation{hid}
 \citation{hid}
+\citation{mostad}
 \citation{agresti}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Material and Methods}{2}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}The HID SNP Genotyper Plugin}{2}{subsection.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}The Symmetric Multinomial Logistic Regression (SMLR) Model}{2}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}Model Formulation}{2}{subsubsection.2.2.1}\protected@file@percent }
-\newlabel{eq:smlr}{{1}{2}{Model Formulation}{equation.2.1}{}}
-\newlabel{eq:posterior}{{2}{2}{Model Formulation}{equation.2.2}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}SNP Genotype Calling}{2}{subsubsection.2.2.2}\protected@file@percent }
-\newlabel{eq:boundaries}{{3}{2}{SNP Genotype Calling}{equation.2.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}The observational model by Mostad, Tillmar, and Kling}{2}{subsection.2.2}\protected@file@percent }
+\newlabel{eq:e}{{1}{2}{The observational model by Mostad, Tillmar, and Kling}{equation.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}The Symmetric Multinomial Logistic Regression (SMLR) Model}{2}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}Model Formulation}{2}{subsubsection.2.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces  Genotype predictions for the examinations of \SI {31.25}{\pg } DNA.\\ Each plot displays 1,931~SNP observations classified using the genotyping methods: HID SNP Genotyper Plugin~(HSG), Enforcing the Quality Checks~(EQC), and Symmetric Multinomial Logistic Regression~(SMLR). A dot represents a set of read counts $(s_1, s_2)$ for an SNP. It is coloured by the true genotype: red for heterozygous and blue or yellow for homozygous. Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls. In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance. In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (an arbitrary value for illustrative purpose). }}{3}{figure.1}\protected@file@percent }
+\newlabel{fig:methods}{{1}{3}{Genotype predictions for the examinations of \SI {31.25}{\pg } DNA.\\ Each plot displays 1,931~SNP observations classified using the genotyping methods: HID SNP Genotyper Plugin~(HSG), Enforcing the Quality Checks~(EQC), and Symmetric Multinomial Logistic Regression~(SMLR). A dot represents a set of read counts $(s_1, s_2)$ for an SNP. It is coloured by the true genotype: red for heterozygous and blue or yellow for homozygous. Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls. In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance. In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (an arbitrary value for illustrative purpose)}{figure.1}{}}
+\newlabel{eq:smlr}{{2}{3}{Model Formulation}{equation.2.2}{}}
+\newlabel{eq:posterior}{{3}{3}{Model Formulation}{equation.2.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.2}SNP Genotype Calling}{3}{subsubsection.2.3.2}\protected@file@percent }
+\newlabel{eq:boundaries}{{4}{3}{SNP Genotype Calling}{equation.2.4}{}}
 \citation{albert,lesaffre}
 \citation{agresti}
 \citation{efron}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces  Genotype predictions for the examinations of \SI {31.25}{\pg } DNA.\\ Each plot displays 1,931~SNP observations classified using the genotyping methods: HID SNP Genotyper Plugin~(HSG), Enforcing the Quality Checks~(EQC), and Symmetric Multinomial Logistic Regression~(SMLR). A dot represents a set of read counts $(s_1, s_2)$ for an SNP. It is coloured by the true genotype: red for heterozygous and blue or yellow for homozygous. Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls. In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance. In the SMLR plot~(right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals, while the grey area marks the no-call zone when $q = 0.9937$. }}{3}{figure.1}\protected@file@percent }
-\newlabel{fig:methods}{{1}{3}{Genotype predictions for the examinations of \SI {31.25}{\pg } DNA.\\ Each plot displays 1,931~SNP observations classified using the genotyping methods: HID SNP Genotyper Plugin~(HSG), Enforcing the Quality Checks~(EQC), and Symmetric Multinomial Logistic Regression~(SMLR). A dot represents a set of read counts $(s_1, s_2)$ for an SNP. It is coloured by the true genotype: red for heterozygous and blue or yellow for homozygous. Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls. In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance. In the SMLR plot~(right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals, while the grey area marks the no-call zone when $q = 0.9937$}{figure.1}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.3}Estimation}{3}{subsubsection.2.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Assessing the Minimal Sample Size}{3}{subsection.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Assessing the Effectiveness of the SMLR Model}{3}{subsection.2.4}\protected@file@percent }
+\citation{shmueli}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.3}Estimation}{4}{subsubsection.2.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Assessing the Minimal Sample Size}{4}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Assessing the Effectiveness of the SMLR Model}{4}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.5.1}SMLR versus HSG}{4}{subsubsection.2.5.1}\protected@file@percent }
+\newlabel{eq:metric_CR}{{5}{4}{SMLR versus HSG}{equation.2.5}{}}
+\newlabel{eq:metric_AC}{{6}{4}{SMLR versus HSG}{equation.2.6}{}}
 \citation{bartlett}
 \citation{stone,picard}
+\citation{r,tidyverse1,tidyverse2,future1,future2,futureapply,xtable}
+\citation{imagemagick,ggplot,ggnewscale,latex2exp,patchwork}
+\citation{scripts}
 \citation{pereira}
 \citation{alasfi}
-\newlabel{eq:metric_CR}{{4}{4}{Assessing the Effectiveness of the SMLR Model}{equation.2.4}{}}
-\newlabel{eq:metric_AC}{{5}{4}{Assessing the Effectiveness of the SMLR Model}{equation.2.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Data}{4}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.5.2}Comparison of SMLR with MTK}{5}{subsubsection.2.5.2}\protected@file@percent }
+\newlabel{eq:m}{{7}{5}{Comparison of SMLR with MTK}{equation.2.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Software}{5}{subsection.2.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}Data}{5}{subsection.2.7}\protected@file@percent }
 \citation{hid}
 \citation{pereira}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.5.1}Initial SNP Calling}{5}{subsubsection.2.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Results}{5}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Pre-Analysis}{5}{subsection.3.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The SMLR model's genotyping improvements for all examined DNA quantities.}}{6}{table.1}\protected@file@percent }
-\newlabel{tab:NC_WC}{{1}{6}{The SMLR model's genotyping improvements for all examined DNA quantities}{table.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces  Distribution of square-root transformed allele signals.\\ A dot represents a set of read counts $(s_1, s_2)$ for an SNP and is coloured according to the true genotype: red for heterozygous and blue or yellow for homozygous genotypes. The displayed DNA quantities indicate where the accuracy of the HID SNP Genotyper Plugin falls below 100\%, with its wrong calls marked by red crosses and no-calls by black pluses. }}{6}{figure.2}\protected@file@percent }
-\newlabel{fig:scatterplots}{{2}{6}{Distribution of square-root transformed allele signals.\\ A dot represents a set of read counts $(s_1, s_2)$ for an SNP and is coloured according to the true genotype: red for heterozygous and blue or yellow for homozygous genotypes. The displayed DNA quantities indicate where the accuracy of the HID SNP Genotyper Plugin falls below 100\%, with its wrong calls marked by red crosses and no-calls by black pluses}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.7.1}Initial SNP Calling}{6}{subsubsection.2.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Results}{6}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Pre-Analysis}{6}{subsection.3.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The SMLR model's genotyping improvements relative to the HID SNP Genotyper Plugin (HSG).}}{7}{table.1}\protected@file@percent }
+\newlabel{tab:NC_WC}{{1}{7}{The SMLR model's genotyping improvements relative to the HID SNP Genotyper Plugin (HSG)}{table.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces  Distribution of square-root transformed allele signals.\\ A dot represents a set of read counts $(s_1, s_2)$ for an SNP and is coloured according to the true genotype: red for heterozygous and blue or yellow for homozygous genotypes. The displayed DNA quantities indicate where the accuracy of the HID SNP Genotyper Plugin falls below 100\%, with its wrong calls marked by red crosses and no-calls by black pluses. }}{8}{figure.2}\protected@file@percent }
+\newlabel{fig:scatterplots}{{2}{8}{Distribution of square-root transformed allele signals.\\ A dot represents a set of read counts $(s_1, s_2)$ for an SNP and is coloured according to the true genotype: red for heterozygous and blue or yellow for homozygous genotypes. The displayed DNA quantities indicate where the accuracy of the HID SNP Genotyper Plugin falls below 100\%, with its wrong calls marked by red crosses and no-calls by black pluses}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Validation of the SMLR Model}{8}{subsection.3.2}\protected@file@percent }
 \citation{hid}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Validation of the SMLR Model}{7}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Discussion}{7}{section.4}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces  Median accuracy versus call rate from aggregated results of cross-validations.\\ Each line represents the median accuracies calculated from binned call rate data of 1,000 cross-validation iterations, where the six SMLR models were fitted to and tested on data from the examinations of the DNA quantities indicated above the plots. The red dot in each plot shows the median accuracy and call rate for the HID SNP Genotyper Plugin. Note that the first axes have been reversed to align with Fig.~\ref {fig:accr_vs_q_low}, where increasing $q$ leads to decreasing call rates. }}{8}{figure.3}\protected@file@percent }
-\newlabel{fig:ac_cr}{{3}{8}{Median accuracy versus call rate from aggregated results of cross-validations.\\ Each line represents the median accuracies calculated from binned call rate data of 1,000 cross-validation iterations, where the six SMLR models were fitted to and tested on data from the examinations of the DNA quantities indicated above the plots. The red dot in each plot shows the median accuracy and call rate for the HID SNP Genotyper Plugin. Note that the first axes have been reversed to align with Fig.~\ref {fig:accr_vs_q_low}, where increasing $q$ leads to decreasing call rates}{figure.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces  Performance of the SMLR model across probability thresholds, $q$.\\ The grey lines depict the model's performance in each of 1,000 cross-validation iterations. The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the left plot. The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin. Dotted lines mark the 25th and 75th percentiles among the 1,000 cross-validations, while dashed lines indicate medians. }}{8}{figure.4}\protected@file@percent }
-\newlabel{fig:accr_vs_q_low}{{4}{8}{Performance of the SMLR model across probability thresholds, $q$.\\ The grey lines depict the model's performance in each of 1,000 cross-validation iterations. The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the left plot. The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin. Dotted lines mark the 25th and 75th percentiles among the 1,000 cross-validations, while dashed lines indicate medians}{figure.4}{}}
+\citation{shmueli}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Discussion}{9}{section.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces  Median accuracy versus call rate from aggregated results of cross-validations (legend applies to both plots).\\ Each line represents the median accuracies calculated from binned call rate data of 1,000 cross-validation iterations, where the six SMLR models were fitted to and tested on data from the examinations of the DNA quantities indicated above the plots. The red dot in each plot shows the median accuracy and call rate for the HID SNP Genotyper Plugin. Note that the first axes have been reversed to align with Fig.~\ref {fig:accr_vs_q_low}, where increasing $q$ leads to decreasing call rates. }}{10}{figure.3}\protected@file@percent }
+\newlabel{fig:ac_cr}{{3}{10}{Median accuracy versus call rate from aggregated results of cross-validations (legend applies to both plots).\\ Each line represents the median accuracies calculated from binned call rate data of 1,000 cross-validation iterations, where the six SMLR models were fitted to and tested on data from the examinations of the DNA quantities indicated above the plots. The red dot in each plot shows the median accuracy and call rate for the HID SNP Genotyper Plugin. Note that the first axes have been reversed to align with Fig.~\ref {fig:accr_vs_q_low}, where increasing $q$ leads to decreasing call rates}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces  Performance of the SMLR model across probability thresholds, $q$ (legend applies to both plots).\\ The grey lines depict the model's performance in each of 1,000 cross-validation iterations. The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the left plot. The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin. Dotted lines mark the 25th and 75th percentiles among the 1,000 cross-validations, while dashed lines indicate medians. }}{10}{figure.4}\protected@file@percent }
+\newlabel{fig:accr_vs_q_low}{{4}{10}{Performance of the SMLR model across probability thresholds, $q$ (legend applies to both plots).\\ The grey lines depict the model's performance in each of 1,000 cross-validation iterations. The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the left plot. The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin. Dotted lines mark the 25th and 75th percentiles among the 1,000 cross-validations, while dashed lines indicate medians}{figure.4}{}}
 \citation{tvede18,tvede17,genogeographer}
+\citation{shmueli}
 \bibstyle{elsarticle-num}
 \bibdata{references}
-\bibcite{r}{{1}{}{{}}{{}}}
-\bibcite{tidyverse1}{{2}{}{{}}{{}}}
-\bibcite{tidyverse2}{{3}{}{{}}{{}}}
-\bibcite{future1}{{4}{}{{}}{{}}}
-\bibcite{future2}{{5}{}{{}}{{}}}
-\bibcite{futureapply}{{6}{}{{}}{{}}}
-\bibcite{xtable}{{7}{}{{}}{{}}}
-\bibcite{imagemagick}{{8}{}{{}}{{}}}
-\bibcite{ggplot}{{9}{}{{}}{{}}}
-\bibcite{ggnewscale}{{10}{}{{}}{{}}}
-\bibcite{latex2exp}{{11}{}{{}}{{}}}
-\bibcite{patchwork}{{12}{}{{}}{{}}}
-\bibcite{scripts}{{13}{}{{}}{{}}}
-\bibcite{hid}{{14}{}{{}}{{}}}
-\bibcite{agresti}{{15}{}{{}}{{}}}
-\bibcite{albert}{{16}{}{{}}{{}}}
-\bibcite{lesaffre}{{17}{}{{}}{{}}}
-\bibcite{efron}{{18}{}{{}}{{}}}
-\bibcite{bartlett}{{19}{}{{}}{{}}}
-\bibcite{stone}{{20}{}{{}}{{}}}
-\bibcite{picard}{{21}{}{{}}{{}}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{10}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conflict of Interest Statement}{10}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7}Acknowledgments}{10}{section.7}\protected@file@percent }
-\bibcite{pereira}{{22}{}{{}}{{}}}
-\bibcite{alasfi}{{23}{}{{}}{{}}}
-\bibcite{tvede18}{{24}{}{{}}{{}}}
-\bibcite{tvede17}{{25}{}{{}}{{}}}
-\bibcite{genogeographer}{{26}{}{{}}{{}}}
+\bibcite{alasfi}{{1}{}{{}}{{}}}
+\bibcite{mostad}{{2}{}{{}}{{}}}
+\bibcite{butler}{{3}{}{{}}{{}}}
+\bibcite{swgdam}{{4}{}{{}}{{}}}
+\bibcite{hid}{{5}{}{{}}{{}}}
+\bibcite{agresti}{{6}{}{{}}{{}}}
+\bibcite{albert}{{7}{}{{}}{{}}}
+\bibcite{lesaffre}{{8}{}{{}}{{}}}
+\bibcite{efron}{{9}{}{{}}{{}}}
+\bibcite{shmueli}{{10}{}{{}}{{}}}
+\bibcite{bartlett}{{11}{}{{}}{{}}}
+\bibcite{stone}{{12}{}{{}}{{}}}
+\bibcite{picard}{{13}{}{{}}{{}}}
+\bibcite{r}{{14}{}{{}}{{}}}
+\bibcite{tidyverse1}{{15}{}{{}}{{}}}
+\bibcite{tidyverse2}{{16}{}{{}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{12}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conflict of Interest Statement}{12}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Acknowledgments}{12}{section.7}\protected@file@percent }
+\bibcite{future1}{{17}{}{{}}{{}}}
+\bibcite{future2}{{18}{}{{}}{{}}}
+\bibcite{futureapply}{{19}{}{{}}{{}}}
+\bibcite{xtable}{{20}{}{{}}{{}}}
+\bibcite{imagemagick}{{21}{}{{}}{{}}}
+\bibcite{ggplot}{{22}{}{{}}{{}}}
+\bibcite{ggnewscale}{{23}{}{{}}{{}}}
+\bibcite{latex2exp}{{24}{}{{}}{{}}}
+\bibcite{patchwork}{{25}{}{{}}{{}}}
+\bibcite{scripts}{{26}{}{{}}{{}}}
+\bibcite{pereira}{{27}{}{{}}{{}}}
+\bibcite{tvede18}{{28}{}{{}}{{}}}
+\bibcite{tvede17}{{29}{}{{}}{{}}}
+\bibcite{genogeographer}{{30}{}{{}}{{}}}
 \providecommand\NAT@force@numbers{}\NAT@force@numbers
-\gdef \@abspage@last{12}
+\gdef \@abspage@last{14}
