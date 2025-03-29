@@ -188,3 +188,46 @@ model_dil |> group_by(Dilution) |>
   arrange(desc(Dilution))
 ```
 
+
+# Elbow in standard deviation across sample size
+```{r}
+param <- c("beta0", "beta1", "beta2", "Slope", "Intercept_1", "Intercept_2")
+for (i in param) {
+  d_elbow <- dd_boot_long_fine |>
+    filter(Dilution == "50pg & 25pg") |> 
+    group_by(Parameter, Samplesize) |> 
+    summarise("STD" = sd(Estimate)) |> 
+    ungroup() |> filter(Parameter == i) |>
+    select(Samplesize, STD)
+  
+  dd_elbow <- (d_elbow$Samplesize[-1] + d_elbow$Samplesize[-nrow(d_elbow)])/2
+  dd_elbow <- cbind(dd_elbow, d_elbow[[2]][-nrow(d_elbow)] - d_elbow[[2]][-1])
+  
+  print(i)
+  plot(dd_elbow[,1], dd_elbow[,2])
+  abline(h=(max(dd_elbow[,2])+min(dd_elbow[,2]))/2)
+}
+```
+
+
+Note: The data contains around $3/4$ homozygous genotypes and $1/4$ heterozygous genotypes, but the majority of the wrong calls are found among the heterozygous genotypes. A heterozygous genotype is generally more prone to become a wrong call, since one of its alleles can drop out leaving only the signal from the other allele (while an allele drop out for a homozygous genotype still leaves an intact signal from the other allele which is of the same kind).
+```{r}
+dils2 <- unique(dd_GT_both$Dilution)[order(unique(dd_GT_both$Dilution), decreasing = T)]
+model_dil <- lapply(dils2, function(d) {
+  df <- dd_GT_both |> filter(Dilution %in% d)
+  m <- fit_symmetry_model2(df, f = function(x) sqrt(x), intercept = TRUE, method = "Nelder-Mead", control_list = list(maxit = 500))
+  df <- predict_prob_threshold(df, m)
+  return(df)
+}) |> bind_rows()
+# names(model_dil) <- paste0(dils2, "pg")
+
+model_dil |> group_by(Dilution) |> 
+  summarise("%Het" = round(sum(Genotype_true_AA == "A1A2")/n()*100, digits = 1),
+            "%Hom" = round(sum(Genotype_true_AA != "A1A2")/n()*100, digits = 1),
+            "%WC" = round(sum(Genotype_true != Genotype_pred)/n()*100, digits = 2),
+            "#WC|Het" = sum((Genotype_true != Genotype_pred) & (Genotype_true_AA == "A1A2")),
+            "#WC|Hom" = sum((Genotype_true != Genotype_pred) & (Genotype_true_AA != "A1A2")),
+            "%WC among Het" = round(sum((Genotype_true != Genotype_pred) & (Genotype_true_AA == "A1A2"))*100/sum(Genotype_true_AA == "A1A2"), digits = 2),
+            "%WC among Hom" = round(sum((Genotype_true != Genotype_pred) & (Genotype_true_AA != "A1A2"))*100/sum(Genotype_true_AA != "A1A2"), digits = 2)) |> 
+  arrange(desc(Dilution))
+```
