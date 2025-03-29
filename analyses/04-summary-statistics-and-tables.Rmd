@@ -839,3 +839,379 @@ red_HSG_high <- red_HSG_high[order(red_HSG_high)]
 sum(red_HSG_high < 1) / length(red_HSG_high)
 ```
 
+
+
+# Empirical assessment of conditional genotype probabilities
+Up to symmetry, each unique pair of signals makes its own conditional genotype probability function [the symmetry means that (s1,s2)=(30,20) mirrors (20,30)].
+Despite the symmetry, there are very many unique signal coordinates, and even for each of the non-unique coordinates, we most often (always) find that all observations with such a coordinate has a correct genotype prediction.
+In other words: all observations with a wrong genotype prediction have unique signal coordinates.
+This means that the empirical distribution at each observed signal coordinate either has 100% correctly or 100% wrongly classified genotypes.
+Thus, empirical verification can't be done in a strictly correct manner, but needs to be done by pooling coordinates together and in some way assess their prediction distributions together (median, mean, range).
+
+First we pool coordinates by creating groups in a polar coordinate system.
+We seek to define pooling areas in this coordinate system, such that each group approximately has an equal number of observations.
+Then we conduct a binomial test for each group to see whether the proportion of correctly classified observations can be explained by the mean probability for the predicted genotype in that group, i.e. by the mean of the model's maximal genotype probability for the observations' coordinates.
+```{r}
+# Mirror A1.Reads and A2.Reads, such that (c1, c2) lies below the identity line
+dd_fit_low <- dd_GT_article_both |>
+  filter(Dilution %in% c(50, 31.25)) |>
+  mutate(c1 = if_else(A1.Reads >= A2.Reads, A1.Reads, A2.Reads),
+         c2 = if_else(A2.Reads < A1.Reads, A2.Reads, A1.Reads),
+         radius = sqrt(c1^2 + c2^2),
+         phi = atan2(c2,c1))
+m_fit0 <- fit_symmetry_model2(dd_fit_low, f = sqrt, intercept = F, b_int = c(1,-2))
+dd_fit_low <- predict_prob_threshold(dd_fit_low, m_fit0) |> 
+  mutate(zyg_p = if_else(Genotype_pred_AA == "A1A2", "het", "hom")) |> 
+  select(Dilution, c1, c2, radius, phi, Genotype_true, Genotype_pred, zyg_p, p_max)
+
+# The homozygous and heterozygous probability functions are assessed separately
+for (i in c(seq(20,100,5), 150)) {
+dd_hom0 <- dd_fit_low |> filter(zyg_p == "hom", c2 == 0)
+dd_hom <- dd_fit_low |> filter(zyg_p == "hom", c2 > 0)
+dd_het <- dd_fit_low |> filter(zyg_p == "het")
+
+# Cut points for equally sized radial groups
+gr_size <- i
+hom0_cut <- quantile(dd_hom0$c1, seq(0, 1, length.out = ceiling(nrow(dd_hom0)/gr_size))[-1]) |> floor() |> unname()
+hom_cut <- quantile(dd_hom$radius, seq(0, 1, length.out = ceiling(nrow(dd_hom)/gr_size))[-1]) |> unname()
+het_cut <- quantile(dd_het$radius, seq(0, 1, length.out = ceiling(nrow(dd_het)/(2*gr_size)))[-1]) |> unname()
+
+dd_hom0$rg <- cut(dd_hom0$c1,
+                  breaks = c(0, hom0_cut, Inf),
+                  labels = FALSE,
+                  include.lowest = TRUE)
+dd_hom$rg <- cut(dd_hom$radius,
+                 breaks = c(0, hom_cut, Inf),
+                 labels = FALSE,
+                 include.lowest = TRUE)
+dd_het$rg <- cut(dd_het$radius,
+                 breaks = c(0, het_cut, Inf),
+                 labels = FALSE,
+                 include.lowest = TRUE)
+dd_het <- dd_het |> group_by(rg) |> 
+  mutate(pg = if_else(phi <= median(phi), 1, 2),
+         gr = paste0("(", rg, ", ", pg, ")")) |> ungroup()
+
+# Computing p-values for coordinate groups.
+(p_hom0 <- dd_hom0 |> group_by(rg) |> 
+    mutate(p_pred = mean(p_max),
+           n_obs = n(),
+           n_wc = sum(Genotype_pred != Genotype_true),
+           n_correct = sum(Genotype_pred == Genotype_true),
+           p_empirical = n_correct/n_obs) |> 
+    distinct(c1, c2, .keep_all = TRUE) |> 
+    summarise(p_pred = unique(p_pred),
+              n_obs = unique(n_obs),
+              n_correct = unique(n_correct),
+              p_h0 = binom.test(n_correct, n_obs, p_pred, alternative = "two.sided")$p.value))
+
+(p_hom <- dd_hom |> group_by(rg) |> 
+    mutate(p_pred = mean(p_max),
+           n_obs = n(),
+           n_wc = sum(Genotype_pred != Genotype_true),
+           n_correct = sum(Genotype_pred == Genotype_true),
+           p_empirical = n_correct/n_obs) |> 
+    distinct(c1, c2, .keep_all = TRUE) |> 
+    summarise(p_pred = unique(p_pred),
+              n_obs = unique(n_obs),
+              n_correct = unique(n_correct),
+              p_h0 = binom.test(n_correct, n_obs, p_pred, alternative = "two.sided")$p.value))
+
+(p_het <- dd_het |> group_by(rg) |> 
+    mutate(p_pred = mean(p_max),
+           n_obs = n(),
+           n_wc = sum(Genotype_pred != Genotype_true),
+           n_correct = sum(Genotype_pred == Genotype_true),
+           p_empirical = n_correct/n_obs) |> 
+    distinct(c1, c2, .keep_all = TRUE) |> 
+    summarise(p_pred = unique(p_pred),
+              n_obs = unique(n_obs),
+              n_correct = unique(n_correct),
+              p_h0 = binom.test(n_correct, n_obs, p_pred, alternative = "two.sided")$p.value))
+
+print(paste0("N: ", i, ";    ",
+              "hom0: ", sum(p_hom0$p_h0<0.05),"/",nrow(p_hom0), ";    ",
+              "hom: ", sum(p_hom$p_h0<0.05),"/",nrow(p_hom), ";    ",
+              "het: ", sum(p_het$p_h0<0.05),"/",nrow(p_het)))
+}
+```
+
+```{r}
+# Mirror A1.Reads and A2.Reads, such that (c1, c2) lies below the identity line
+dd_fit_low <- dd_GT_article_both |>
+  filter(Dilution %in% c(50, 31.25)) |>
+  mutate(c1 = if_else(A1.Reads >= A2.Reads, A1.Reads, A2.Reads),
+         c2 = if_else(A2.Reads < A1.Reads, A2.Reads, A1.Reads))
+m_fit0 <- fit_symmetry_model2(dd_fit_low, f = sqrt, intercept = F, b_int = c(1,-2))
+dd_fit_low <- predict_prob_threshold(dd_fit_low, m_fit0) |> 
+  mutate(zyg_p = if_else(Genotype_pred_AA == "A1A2", "het", "hom")) |> 
+  select(Dilution, c1, c2, Genotype_true, Genotype_pred, zyg_p, p_max)
+
+# The homozygous and heterozygous probability functions are assessed separately
+gr_size <- c(seq(10,200,10))
+for (i in gr_size) {
+  dd_hom0 <- dd_fit_low |> filter(zyg_p == "hom", c2 == 0)
+  dd_hom <- dd_fit_low |> filter(zyg_p == "hom", c2 > 0)
+  dd_het <- dd_fit_low |> filter(zyg_p == "het")
+  
+  # Cut points for equally sized radial groups
+  hom0_cut <- quantile(dd_hom0$p_max, seq(0, 1, length.out = ceiling(nrow(dd_hom0)/i))[-1]) |> unname() |> unique()
+  hom_cut <- quantile(dd_hom$p_max, seq(0, 1, length.out = ceiling(nrow(dd_hom)/i))[-1]) |> unname() |> unique()
+  het_cut <- quantile(dd_het$p_max, seq(0, 1, length.out = ceiling(nrow(dd_het)/i))[-1]) |> unname() |> unique()
+  
+  dd_hom0$prob_gr <- cut(dd_hom0$p_max,
+                         breaks = c(0, hom0_cut, Inf),
+                         labels = FALSE,
+                         include.lowest = TRUE)
+  dd_hom$prob_gr <- cut(dd_hom$p_max,
+                        breaks = c(0, hom_cut, Inf),
+                        labels = FALSE,
+                        include.lowest = TRUE)
+  dd_het$prob_gr <- cut(dd_het$p_max,
+                        breaks = c(0, het_cut, Inf),
+                        labels = FALSE,
+                        include.lowest = TRUE)
+  
+  # Computing p-values for coordinate groups.
+  (p_hom0 <- dd_hom0 |> group_by(prob_gr) |> 
+    mutate(p_pred = mean(p_max),
+           n_obs = n(),
+           n_wc = sum(Genotype_pred != Genotype_true),
+           n_correct = sum(Genotype_pred == Genotype_true),
+           p_empirical = n_correct/n_obs) |> 
+    distinct(c1, c2, .keep_all = TRUE) |> 
+    summarise(p_pred = unique(p_pred),
+              n_obs = unique(n_obs),
+              n_correct = unique(n_correct),
+              p_h0 = binom.test(n_correct, n_obs, p_pred, alternative = "two.sided")$p.value))
+  
+  (p_hom <- dd_hom |> group_by(prob_gr) |> 
+    mutate(p_pred = mean(p_max),
+           n_obs = n(),
+           n_wc = sum(Genotype_pred != Genotype_true),
+           n_correct = sum(Genotype_pred == Genotype_true),
+           p_empirical = n_correct/n_obs) |> 
+    distinct(c1, c2, .keep_all = TRUE) |> 
+    summarise(p_pred = unique(p_pred),
+              n_obs = unique(n_obs),
+              n_correct = unique(n_correct),
+              p_h0 = binom.test(n_correct, n_obs, p_pred, alternative = "two.sided")$p.value))
+  
+  (p_het <- dd_het |> group_by(prob_gr) |> 
+    mutate(p_pred = mean(p_max),
+           n_obs = n(),
+           n_wc = sum(Genotype_pred != Genotype_true),
+           n_correct = sum(Genotype_pred == Genotype_true),
+           p_empirical = n_correct/n_obs) |> 
+    distinct(c1, c2, .keep_all = TRUE) |> 
+    summarise(p_pred = unique(p_pred),
+              n_obs = unique(n_obs),
+              n_correct = unique(n_correct),
+              p_h0 = binom.test(n_correct, n_obs, p_pred, alternative = "two.sided")$p.value))
+  
+  if (i == gr_size[1]) {print("Group size   #p < 0.05 / #Tests (i.e. #Groups)")}
+  print(paste0("N = ", i, ";      ",
+               "hom0: ", sum(p_hom0$p_h0<0.05),"/",nrow(p_hom0), ";    ",
+               "hom: ", sum(p_hom$p_h0<0.05),"/",nrow(p_hom), ";      ",
+               "het: ", sum(p_het$p_h0<0.05),"/",nrow(p_het)))
+}
+```
+
+
+
+# Supplementary
+## Signals are very similar across the four nucleotides
+```{r}
+dd_nucleotide <- dd_GT_article_both |> 
+  pivot_longer(cols = c(A.Reads, C.Reads, G.Reads, T.Reads),
+               names_to = "Nucleotide", values_to = "Signal") |> 
+  mutate(Nucleotide = str_sub(Nucleotide, 1, 1))
+
+dd_noise <- dd_nucleotide |>
+  # filter(Nucleotide == A1 | Nucleotide == A2) |> 
+  filter(Nucleotide != str_sub(Genotype_true,1,1) & Nucleotide != str_sub(Genotype_true,2,2)) |> 
+  filter(Signal > 0) # By definition, a zero signal is not noise
+
+dd_nucleotide <- dd_nucleotide |>
+  filter(Nucleotide == str_sub(Genotype_true,1,1) | Nucleotide == str_sub(Genotype_true,2,2))
+
+
+p_s <- dd_nucleotide |> filter(Dilution %in% c(50, 31.25)) |> 
+  ggplot(aes(x = sqrt(Signal), colour = Nucleotide)) +
+  stat_density(aes(colour = Nucleotide), geom = "line", position = "identity",
+               trim = T, bounds = c(0, Inf), adjust = 2.5) +
+  labs(x = TeX("$\\sqrt{s}$"), y = "Density", title = "50pg & 31.25pg", subtitle = "Genotype signal") +
+  theme(strip.text.x.top = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.title = element_text(size = legend_title_size),
+        legend.text = element_text(size = legend_text_size),
+        legend.key.size = unit(3, 'mm'),
+        legend.margin = margin(t=4.5, r=0, b=4.5, l=5.5, unit = 'pt'),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "grey92"),
+        plot.margin = margin(t=0, r=0, b=0, l=0, unit='pt'))
+
+p_no <- dd_noise |> filter(Dilution %in% c(50, 31.25)) |> 
+  ggplot(aes(x = sqrt(Signal), colour = Nucleotide)) +
+  stat_density(aes(colour = Nucleotide), geom = "line", position = "identity",
+               trim = T, bounds = c(1, Inf), adjust = 4.5) +
+  labs(x = TeX("$\\sqrt{s}$"), y = NULL, subtitle = "Noise") +
+  theme(strip.text.x.top = element_text(size = plot_title_size),
+        axis.title = element_text(size = axis_title_size),
+        axis.text = element_text(size = axis_ticks_size),
+        legend.title = element_text(size = legend_title_size),
+        legend.text = element_text(size = legend_text_size),
+        legend.key.size = unit(3, 'mm'),
+        legend.margin = margin(t=4.5, r=0, b=4.5, l=5.5, unit = 'pt'),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "grey92"),
+        plot.margin = margin(t=0, r=0, b=0, l=0, unit='pt'))
+
+p <- p_s + p_no + plot_layout(ncol = 2, nrow = 1, guides = "collect") & theme_bw()
+
+# Leftmost plot should have its left margin set to zero
+p[[1]]$theme$plot.margin[4] <- 0*p[[1]]$theme$plot.margin[4]
+# Rightmost plot should have its right margin set to zero
+p[[2]]$theme$plot.margin[2] <- 0*p[[2]]$theme$plot.margin[2]
+# Both plots should have their top and bottom margins set to zero
+p[[1]]$theme$plot.margin[c(1,3)] <- 0*p[[1]]$theme$plot.margin[c(1,3)]
+p[[2]]$theme$plot.margin[c(1,3)] <- 0*p[[2]]$theme$plot.margin[c(1,3)]
+# The legends' right margins should be set to zero
+p[[1]]$theme$legend.margin[2] <- 0*p[[1]]$theme$legend.margin[2]
+p[[2]]$theme$legend.margin[2] <- 0*p[[2]]$theme$legend.margin[2]
+# And the overall margins added by patchwork should be set to zero:
+(p <- p + plot_annotation(theme = theme(plot.margin = margin(t=0, r=0, b=0, l=0, unit = 'pt'))))
+
+ggsave(filename = file.path("..", "article-FSIGEN", "FIG_S4-two-column.bmp"),
+       plot = p, device = "bmp", width = 7480, height = 3425, units = "px", dpi = 1000)
+```
+
+
+# Proportionality
+The following shows that the no-call alignment is almost always exact.
+This implies that the proportionality is almost always exact.
+For the few non-exact cases, it is also shown that the difference in aligned no-calls is very small.
+This implies that the proportionality is then approximate.
+```{r}
+m <- c("sqrt_NI-C", "sqrt-C", "log_NI-C", "log-C", "I_NI-C", "I-C")
+ff <- c("NI", "", "log_NI", "log_", "I_NI", "I_")
+datafile_name <- paste0("00_obj_crossval_C_", ff, "1K_9pers_",
+                        rep(c("low", "high"), each=length(ff)), ".rds")
+
+# Difference in NCs when SMLR's NCs are aligned to those of the HSG
+NC_diff_smlr_hsg <- lapply(datafile_name, function(x) {
+  dd_val_dils <- readRDS(file.path("..", "data", x))
+  names(dd_val_dils) <- LETTERS[1:length(dd_val_dils)]
+  # Extracting NC differences for the six cross-validations in the supplementary material
+  dd_val_dils[c("D", "B", "J")] |>
+    sapply(function(d){
+      sapply(d, function(r){
+        hsg_nc <- r$HSG_NN
+        p_all <- c(r$p_WC, r$p_NN)
+        if (length(p_all) > hsg_nc) {
+          p_all <- p_all[order(p_all)]
+          # NOTE: p_all is listed from low to high, so entry hsg_nc is the last
+          # point we need to turn into an NC, before SMLR makes at least as many
+          # no-calls has HSG. The question is whether the p at this point is
+          # repeated at the next point, such that more points are turned into NCs
+          # at that q-threshold.
+          q <- p_all[hsg_nc]
+          smlr_nc <- max(which(p_all == q))
+        } else {
+          smlr_nc <- hsg_nc
+        }
+        return(smlr_nc - hsg_nc)
+      })
+    })
+})
+names(NC_diff_smlr_hsg) <- gsub("1K_9pers|\\.rds", "", str_sub(datafile_name, 19))
+names(NC_diff_smlr_hsg) <- sub("__", "_", names(NC_diff_smlr_hsg))
+
+lapply(NC_diff_smlr_hsg, function(cval) {
+  apply(cval, MARGIN=2, function(x) {sum(x == 0)})
+}) |> bind_rows(.id = "CV")
+
+pooled_NC_diffs <- NC_diff_smlr_hsg |> unlist() |> unname()
+# Proportion of exact alignments for all cross-validations pooled together
+sum(pooled_NC_diffs == 0) / length(pooled_NC_diffs)
+
+# Maximal NC difference after NC-alignment across all cross-validations
+(max_diff <- max(pooled_NC_diffs))
+
+# Size range of test data
+n_at_max <- lapply(datafile_name, function(x) {
+  dd_val_dils <- readRDS(file.path("..", "data", x))
+  names(dd_val_dils) <- LETTERS[1:length(dd_val_dils)]
+  dd_val_dils[c("D", "B", "J")] |>
+    sapply(function(d){
+      sapply(d, function(r){
+        hsg_nc <- r$HSG_NN
+        p_all <- c(r$p_WC, r$p_NN)
+        if (length(p_all) > hsg_nc) {
+          p_all <- p_all[order(p_all)]
+          q <- p_all[hsg_nc]
+          smlr_nc <- max(which(p_all == q))
+        } else {
+          smlr_nc <- hsg_nc
+        }
+        if (smlr_nc - hsg_nc == max_diff) {
+          return(r$N_test)
+        } else {
+          return(NULL)
+        }
+      })
+    })
+}) |> unlist() |> unname()
+n_at_max / (n_at_max - max_diff)
+
+# High percentiles
+quantile(pooled_NC_diffs, probs = c(0.75000, 0.77635,
+                                    0.77639, 0.85996,
+                                    0.86000, 0.90894,
+                                    0.90897, 0.94119,
+                                    0.94123, 0.96180,
+                                    0.96184, 0.97766,
+                                    0.97770, 0.98911,
+                                    0.98914, 0.99536,
+                                    0.99539, 0.99863,
+                                    0.99867, 0.99972,
+                                    0.99975, 0.99991,
+                                    0.99995, 0.99997,
+                                    0.9999999999))
+quantile(pooled_NC_diffs[pooled_NC_diffs > 0], probs = c(0.25, 0.37,
+                                                         0.38, 0.59,
+                                                         0.60, 0.73,
+                                                         0.74, 0.82,
+                                                         0.83, 0.90,
+                                                         0.91, 0.95,
+                                                         0.96, 0.97,
+                                                         0.98, 0.993,
+                                                         0.995, 0.998,
+                                                         0.999, 0.9996,
+                                                         0.9998, 0.9999999994))
+
+# Computing all observed (TC - NC_{\text{HSG}} / (TC - NC_{\text{SMLR}}(q_{NC}))
+TC_NC_ratio <- lapply(datafile_name, function(x) {
+  dd_val_dils <- readRDS(file.path("..", "data", x))
+  names(dd_val_dils) <- LETTERS[1:length(dd_val_dils)]
+  dd_val_dils[c("D", "B", "J")] |>
+    sapply(function(d){
+      sapply(d, function(r){
+        hsg_nc <- r$HSG_NN
+        p_all <- c(r$p_WC, r$p_NN)
+        if (length(p_all) > hsg_nc) {
+          p_all <- p_all[order(p_all)]
+          q <- p_all[hsg_nc]
+          smlr_nc <- max(which(p_all == q))
+        } else {
+          smlr_nc <- hsg_nc
+        }
+        return((r$N_test - hsg_nc) / (r$N_test - smlr_nc))
+      })
+    })
+}) |> unlist() |> unname()
+
+quantile(TC_NC_ratio, probs = c(0.7763, 0.8782, 0.9514, 0.9850, 0.9963, 0.9996, 0.99998, 1))
+quantile(TC_NC_ratio[TC_NC_ratio > 1], probs = c(0.25, 0.5, 0.75, 0.8, 0.9, 0.95, 0.98, 0.99))
+```
