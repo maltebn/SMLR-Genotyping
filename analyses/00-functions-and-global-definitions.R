@@ -262,6 +262,80 @@ threshold_rule <- function(test_data, qc = list("MAF" = t_maf, "PPC" = t_ppc), g
 }
 
 
+#------------------------------------------#
+# Model from Mostad, Tillmar, and Kling ####
+#------------------------------------------#
+predict_mostad_model <- function(df, m, e=0.003, g_prior=c("uniform_bi", "uniform_tetra"), negloglik_me=F) {
+  if (is.character(g_prior)) {
+    if (g_prior[1] == "uniform_bi") {
+      g_prior <- df |> select(Target.ID, A1, A2) |> group_by(Target.ID) |> 
+        summarise(pA = if_else("A" %in% c(A1, A2), 0.5, 0),
+                  pC = if_else("C" %in% c(A1, A2), 0.5, 0),
+                  pG = if_else("G" %in% c(A1, A2), 0.5, 0),
+                  pT = if_else("T" %in% c(A1, A2), 0.5, 0)) |> 
+        mutate(AA = pA^2, CC = pC^2, GG = pG^2, TT = pT^2,
+               AC = 2*pA*pC, AG = 2*pA*pG, AT = 2*pA*pT,
+               CG = 2*pC*pG, CT = 2*pC*pT,
+               GT = 2*pG*pT) |> select(!c(pA, pC, pG, pT))
+    } else if (g_prior[1] == "uniform_tetra") {
+      g_prior <- df |> select(Target.ID) |> group_by(Target.ID) |> 
+        summarise(pA = 0.25, pC = 0.25, pG = 0.25, pT = 0.25) |> 
+        mutate(AA = pA^2, CC = pC^2, GG = pG^2, TT = pT^2,
+               AC = 2*pA*pC, AG = 2*pA*pG, AT = 2*pA*pT,
+               CG = 2*pC*pG, CT = 2*pC*pT,
+               GT = 2*pG*pT) |> select(!c(pA, pC, pG, pT))
+    }}
+  Pg <- df |> select(Target.ID) |> left_join(g_prior, by = "Target.ID") |> 
+    mutate(across(!c("Target.ID", "AA", "CC", "GG", "TT"), ~ .x/2)) |> 
+    mutate(CA = AC, GA = AG, TA = AT, GC = CG, TC = CT, TG = GT)
+  gt <- Pg |> select(!Target.ID) |> names()
+  
+  k <- 0:m
+  q <- k/m
+  
+  c1 <- df$A.Reads
+  c2 <- df$C.Reads
+  c3 <- df$G.Reads
+  c4 <- df$T.Reads
+  cm <- unname(cbind(c1,c2,c3,c4)) |> apply(MARGIN=1, function(x){sort(x, decreasing = F)}) |> t()
+  
+  # Note that lchoose(cm[,1], cm[,1]) always equals 0, which we exploit to get
+  # better numerical stability: the above sorting makes sure that cm[,1] is the
+  # largest count
+  m_coef <- lchoose(cm[,1] + cm[,2],                   cm[,2]) + # The difficult coefficient (large factorial).
+            lchoose(cm[,1] + cm[,2] + cm[,3],          cm[,3]) + # Since cm[,3] and cm[,4] are small numbers,
+            lchoose(cm[,1] + cm[,2] + cm[,3] + cm[,4], cm[,4])   # the last two coefficients are easy to compute.
+  
+  lb <- function(alleles, acgt) {log((1-e)*(q*(alleles[1]==acgt) + (1-q)*(alleles[2]==acgt)) + e/4)}
+  Pcg <- function(a) {apply(exp(t(m_coef +
+                                  outer(c1, lb(a,"A")) +
+                                  outer(c2, lb(a,"C")) +
+                                  outer(c3, lb(a,"G")) +
+                                  outer(c4, lb(a,"T"))) +
+                                  lchoose(m, k) - m*log(2)),
+                            MARGIN = 2, sum)}
+  
+  Pc <- lapply(gt, function(g) {
+    a <- str_split_fixed(g, "", 2) |> c()
+    Pcg(a)*Pg[,g]
+  }) |> bind_cols() |> apply(MARGIN = 1, sum)
+  
+  if (!negloglik_me) {
+    Pgc <- lapply(gt, function(g) {Pcg(c(str_split_fixed(g, "", 2)))*Pg[,g]/Pc}) |>
+      bind_cols() |>
+      mutate(AC = AC+CA, AG = AG+GA, AT = AT+TA,
+             CG = CG+GC, CT = CT+TC,
+             GT = GT+TG) |> select(AA, CC, GG, TT, AC, AG, AT, CG, CT, GT)
+    
+    mostad_pmax <- apply(Pgc, MARGIN = 1, max)
+    mostad_pred <- apply(Pgc, MARGIN = 1, function(x) {names(Pgc)[which.max(x)]})
+    return(df |> mutate("Mostad_pred" = mostad_pred, "Mostad_pmax" = mostad_pmax))
+  } else {
+    return(sum(-log(Pc)))
+  }
+}
+
+
 #-----------------#
 # Plot Machine ####
 #-----------------#
