@@ -1041,34 +1041,22 @@ p_s <- dd_nucleotide |> filter(Dilution %in% c(50, 31.25)) |>
   stat_density(aes(colour = Nucleotide), geom = "line", position = "identity",
                trim = T, bounds = c(0, Inf), adjust = 2.5) +
   labs(x = TeX("$\\sqrt{s}$"), y = "Density", title = "50pg & 31.25pg", subtitle = "Genotype signal") +
-  theme(strip.text.x.top = element_text(size = plot_title_size),
-        axis.title = element_text(size = axis_title_size),
-        axis.text = element_text(size = axis_ticks_size),
-        legend.title = element_text(size = legend_title_size),
-        legend.text = element_text(size = legend_text_size),
-        legend.key.size = unit(3, 'mm'),
-        legend.margin = margin(t=4.5, r=0, b=4.5, l=5.5, unit = 'pt'),
-        panel.background = element_rect(fill = "white"),
-        panel.grid = element_line(colour = "grey92"),
-        plot.margin = margin(t=0, r=0, b=0, l=0, unit='pt'))
+  theme_bw()
 
 p_no <- dd_noise |> filter(Dilution %in% c(50, 31.25)) |> 
   ggplot(aes(x = sqrt(Signal), colour = Nucleotide)) +
   stat_density(aes(colour = Nucleotide), geom = "line", position = "identity",
                trim = T, bounds = c(1, Inf), adjust = 4.5) +
   labs(x = TeX("$\\sqrt{s}$"), y = NULL, subtitle = "Noise") +
-  theme(strip.text.x.top = element_text(size = plot_title_size),
+  theme_bw()
+
+p <- p_s + p_no + plot_layout(ncol = 2, nrow = 1, guides = "collect") & 
+  theme(plot.title = element_text(size = plot_title_size),
+        plot.subtitle = element_text(size = plot_title_size),
         axis.title = element_text(size = axis_title_size),
         axis.text = element_text(size = axis_ticks_size),
         legend.title = element_text(size = legend_title_size),
-        legend.text = element_text(size = legend_text_size),
-        legend.key.size = unit(3, 'mm'),
-        legend.margin = margin(t=4.5, r=0, b=4.5, l=5.5, unit = 'pt'),
-        panel.background = element_rect(fill = "white"),
-        panel.grid = element_line(colour = "grey92"),
-        plot.margin = margin(t=0, r=0, b=0, l=0, unit='pt'))
-
-p <- p_s + p_no + plot_layout(ncol = 2, nrow = 1, guides = "collect") & theme_bw()
+        legend.text = element_text(size = legend_text_size))
 
 # Leftmost plot should have its left margin set to zero
 p[[1]]$theme$plot.margin[4] <- 0*p[[1]]$theme$plot.margin[4]
