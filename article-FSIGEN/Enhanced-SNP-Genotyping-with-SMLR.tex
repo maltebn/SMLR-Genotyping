@@ -139,6 +139,7 @@ It is coloured by the true genotype: red for heterozygous and blue or yellow for
 Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls.
 In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance.
 In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (an arbitrary value for illustrative purpose).
+Outside the grey area, the predicted genotype has $P(G \mid s_1, s_2) \geq q$.
 }
 \label{fig:methods}
 \end{figure*}
@@ -438,7 +439,7 @@ To avoid overestimating the performance of the SMLR method framework, the remain
 Median accuracy versus call rate from aggregated results of cross-validations (legend applies to both plots).\\
 Each line represents the median accuracies calculated from binned call rate data of 1,000 cross-validation iterations, where the six SMLR models were fitted to and tested on data from the examinations of the DNA quantities indicated above the plots.
 The red dot in each plot shows the median accuracy and call rate for the HID SNP Genotyper Plugin.
-Note that the first axes have been reversed to align with Fig.~\ref{fig:accr_vs_q_low}, where increasing $q$ leads to decreasing call rates.
+Note that the two plots use different axes scales, and that the first axes have been reversed to align with Fig.~\ref{fig:accr_vs_q_low}, where increasing $q$ leads to decreasing call rates.
 }
 \label{fig:ac_cr}
 \end{figure*}
