@@ -35,7 +35,7 @@ dd_GT_2nd_article <- dd_GT_2nd_article |>
   mutate(Genotype_EQC = threshold_rule(.data))
 
 dd_GT_article_both <- bind_rows(dd_GT_article, dd_GT_2nd_article)
-dd_mostad <- readRDS(file.path("..", "data", "00_dd_mostad.rds"))
+dd_MTK <- readRDS(file.path("..", "data", "00_dd_MTK.rds"))
 ```
 
 
@@ -180,7 +180,7 @@ sum(fully_agreeing %in% full_data)
 
 # The HSG's NCs, WCs, Call rates, and accuracies for used data
 ```{r}
-(dd_hsg <- dd_mostad |> 
+(dd_hsg <- dd_MTK |> 
   mutate(Low_high = (Run == "a")*1) |> 
   group_by(Dilution, Low_high) |> 
   summarise("NCs" = sum(Genotype == "NC"),
@@ -199,10 +199,10 @@ m_fit <- dd_GT_article_both |> filter(Dilution %in% c(50, 25)) |>
   fit_symmetry_model2(f = sqrt, intercept = T, b_int = c(0, 1,-2))
 q <- 0.84
 
-dd_pred <- predict_prob_threshold(dd_mostad, m_fit) |> 
+dd_pred <- predict_prob_threshold(dd_MTK, m_fit) |> 
   mutate(WC_l = Genotype_pred != Genotype_true & Genotype_pred != no_call, # logical indicators of WCs
-         uWC_l = Mostad_pred_u != Genotype_true & Mostad_pred_u != no_call,
-         mWC_l = Mostad_pred != Genotype_true & Mostad_pred != no_call) |> 
+         uWC_l = MTK_pred_u != Genotype_true & MTK_pred_u != no_call,
+         mWC_l = MTK_pred != Genotype_true & MTK_pred != no_call) |> 
   split(~Dilution)
 ```
 
@@ -279,37 +279,37 @@ dd_smlr_nc <- dd_pred |>
     }
     smlr_wc <- d |> filter(p_max >= q_same_wc, WC_l) |> nrow()
     
-    # Mostad (with prior derived from data)
-    p_cr_m <- d |> filter(mWC_l) |> select(Mostad_pmax, mWC_l) |> arrange(desc(Mostad_pmax)) |> mutate(mWC_cum = cumsum(mWC_l))
+    # MTK (with prior derived from data)
+    p_cr_m <- d |> filter(mWC_l) |> select(MTK_pmax, mWC_l) |> arrange(desc(MTK_pmax)) |> mutate(mWC_cum = cumsum(mWC_l))
     if (nrow(p_cr_m) > hsg_wc) {
       q_same_wc_m <- p_cr_m |> filter(mWC_cum <= hsg_wc) |> 
-        filter(mWC_cum == max(mWC_cum)) |> select(Mostad_pmax) |> unlist()
-      if (any(filter(p_cr_m, mWC_cum > hsg_wc)$Mostad_pmax == q_same_wc_m)) {
-        q_same_wc_m <- p_cr_m |> filter(Mostad_pmax > q_same_wc_m) |> 
-          filter(mWC_cum == max(mWC_cum)) |> select(Mostad_pmax) |> unlist()
+        filter(mWC_cum == max(mWC_cum)) |> select(MTK_pmax) |> unlist()
+      if (any(filter(p_cr_m, mWC_cum > hsg_wc)$MTK_pmax == q_same_wc_m)) {
+        q_same_wc_m <- p_cr_m |> filter(MTK_pmax > q_same_wc_m) |> 
+          filter(mWC_cum == max(mWC_cum)) |> select(MTK_pmax) |> unlist()
       }
-      mostad_m_nc <- sum(d$Mostad_pmax < q_same_wc_m)
+      MTK_m_nc <- sum(d$MTK_pmax < q_same_wc_m)
     } else {
       q_same_wc_m <- 0
-      mostad_m_nc <- 0
+      MTK_m_nc <- 0
     }
-    mostad_m_wc <- d |> filter(Mostad_pmax >= q_same_wc_m, mWC_l) |> nrow()
+    MTK_m_wc <- d |> filter(MTK_pmax >= q_same_wc_m, mWC_l) |> nrow()
     
-    # Mostad (with biallelic uniform prior)
-    p_cr_u <- d |> filter(uWC_l) |> select(Mostad_pmax_u, uWC_l) |> arrange(desc(Mostad_pmax_u)) |> mutate(uWC_cum = cumsum(uWC_l))
+    # MTK (with biallelic uniform prior)
+    p_cr_u <- d |> filter(uWC_l) |> select(MTK_pmax_u, uWC_l) |> arrange(desc(MTK_pmax_u)) |> mutate(uWC_cum = cumsum(uWC_l))
     if (nrow(p_cr_u) > hsg_wc) {
       q_same_wc_u <- p_cr_u |> filter(uWC_cum <= hsg_wc) |> 
-        filter(uWC_cum == max(uWC_cum)) |> select(Mostad_pmax_u) |> unlist()
-      if (any(filter(p_cr_u, uWC_cum > hsg_wc)$Mostad_pmax_u == q_same_wc_u)) {
-        q_same_wc_u <- p_cr_u |> filter(Mostad_pmax_u > q_same_wc_u) |> 
-          filter(uWC_cum == max(uWC_cum)) |> select(Mostad_pmax_u) |> unlist()
+        filter(uWC_cum == max(uWC_cum)) |> select(MTK_pmax_u) |> unlist()
+      if (any(filter(p_cr_u, uWC_cum > hsg_wc)$MTK_pmax_u == q_same_wc_u)) {
+        q_same_wc_u <- p_cr_u |> filter(MTK_pmax_u > q_same_wc_u) |> 
+          filter(uWC_cum == max(uWC_cum)) |> select(MTK_pmax_u) |> unlist()
       }
-      mostad_u_nc <- sum(d$Mostad_pmax_u < q_same_wc_u)
+      MTK_u_nc <- sum(d$MTK_pmax_u < q_same_wc_u)
     } else {
       q_same_wc_u <- 0
-      mostad_u_nc <- 0
+      MTK_u_nc <- 0
     }
-    mostad_u_wc <- d |> filter(Mostad_pmax_u >= q_same_wc_u, uWC_l) |> nrow()
+    MTK_u_wc <- d |> filter(MTK_pmax_u >= q_same_wc_u, uWC_l) |> nrow()
     
     data.frame("Low_high" = ("a" %in% d$Run)*1,
                "Tot_calls" = nrow(d),
@@ -322,11 +322,11 @@ dd_smlr_nc <- dd_pred |>
                                         hsg_nc == 0 & smlr_nc > 0 ~ Inf,
                                         .default = 100*(hsg_nc-smlr_nc)/hsg_nc),
                "q_same_WC_m" = q_same_wc_m,
-               "Mostad_m_call_rate" = 100*(nrow(d)-mostad_m_nc)/nrow(d),
-               "Mostad_m_NC" = mostad_m_nc,
+               "MTK_m_call_rate" = 100*(nrow(d)-MTK_m_nc)/nrow(d),
+               "MTK_m_NC" = MTK_m_nc,
                "q_same_WC_u" = q_same_wc_u,
-               "Mostad_u_call_rate" = 100*(nrow(d)-mostad_u_nc)/nrow(d),
-               "Mostad_u_NC" = mostad_u_nc)
+               "MTK_u_call_rate" = 100*(nrow(d)-MTK_u_nc)/nrow(d),
+               "MTK_u_NC" = MTK_u_nc)
   }) |> bind_rows(.id = "Dilution") |> 
   mutate(Dilution = as.numeric(Dilution)) |> 
   arrange(Low_high, desc(Dilution)) |> select(-Low_high)
@@ -353,19 +353,19 @@ dd_smlr_wc <- dd_pred |>
     smlr_wc <- d |> filter(p_max >= q_same_nc, WC_l) |> nrow()
     smlr_nc <- d |> filter(p_max < q_same_nc) |> nrow()
     
-    # Mostad (with prior derived from data)
-    p_ac_m <- d |> arrange(Mostad_pmax) |> select(Mostad_pmax, mWC_l) |> rownames_to_column("idx") |> mutate(idx = as.integer(idx))
+    # MTK (with prior derived from data)
+    p_ac_m <- d |> arrange(MTK_pmax) |> select(MTK_pmax, mWC_l) |> rownames_to_column("idx") |> mutate(idx = as.integer(idx))
     q_same_nc_m <- p_ac_m |> filter(idx > hsg_nc) |>
-      filter(idx == min(idx)) |> select(Mostad_pmax) |> unlist()
-    mostad_m_wc <- d |> filter(Mostad_pmax >= q_same_nc_m, mWC_l) |> nrow()
-    mostad_m_nc <- d |> filter(Mostad_pmax < q_same_nc_m) |> nrow()
+      filter(idx == min(idx)) |> select(MTK_pmax) |> unlist()
+    MTK_m_wc <- d |> filter(MTK_pmax >= q_same_nc_m, mWC_l) |> nrow()
+    MTK_m_nc <- d |> filter(MTK_pmax < q_same_nc_m) |> nrow()
     
-    # Mostad (with biallelic uniform prior)
-    p_ac_u <- d |> arrange(Mostad_pmax_u) |> select(Mostad_pmax_u, uWC_l) |> rownames_to_column("idx") |> mutate(idx = as.integer(idx))
+    # MTK (with biallelic uniform prior)
+    p_ac_u <- d |> arrange(MTK_pmax_u) |> select(MTK_pmax_u, uWC_l) |> rownames_to_column("idx") |> mutate(idx = as.integer(idx))
     q_same_nc_u <- p_ac_u |> filter(idx > hsg_nc) |>
-      filter(idx == min(idx)) |> select(Mostad_pmax_u) |> unlist()
-    mostad_u_wc <- d |> filter(Mostad_pmax_u >= q_same_nc_u, uWC_l) |> nrow()
-    mostad_u_nc <- d |> filter(Mostad_pmax_u < q_same_nc_u) |> nrow()
+      filter(idx == min(idx)) |> select(MTK_pmax_u) |> unlist()
+    MTK_u_wc <- d |> filter(MTK_pmax_u >= q_same_nc_u, uWC_l) |> nrow()
+    MTK_u_nc <- d |> filter(MTK_pmax_u < q_same_nc_u) |> nrow()
     
     data.frame("Low_high" = ("a" %in% d$Run)*1,
                "Tot_calls" = nrow(d),
@@ -378,11 +378,11 @@ dd_smlr_wc <- dd_pred |>
                                         hsg_wc == 0 & smlr_wc > 0 ~ Inf,
                                         .default = 100*(hsg_wc-smlr_wc)/hsg_wc),
                "q_same_NC_m" = q_same_nc_m,
-               "Mostad_m_accuracy" = 100*(nrow(d)-mostad_m_nc-mostad_m_wc)/(nrow(d)-mostad_m_nc),
-               "Mostad_m_WC" = mostad_m_wc,
+               "MTK_m_accuracy" = 100*(nrow(d)-MTK_m_nc-MTK_m_wc)/(nrow(d)-MTK_m_nc),
+               "MTK_m_WC" = MTK_m_wc,
                "q_same_NC_u" = q_same_nc_u,
-               "Mostad_u_accuracy" = 100*(nrow(d)-mostad_u_nc-mostad_u_wc)/(nrow(d)-mostad_u_nc),
-               "Mostad_u_WC" = mostad_u_wc)
+               "MTK_u_accuracy" = 100*(nrow(d)-MTK_u_nc-MTK_u_wc)/(nrow(d)-MTK_u_nc),
+               "MTK_u_WC" = MTK_u_wc)
   }) |> bind_rows(.id = "Dilution") |> 
   mutate(Dilution = as.numeric(Dilution)) |> 
   arrange(Low_high, desc(Dilution)) |> select(-Low_high)
@@ -450,7 +450,8 @@ ncwc.table <- cbind(NA, ncwc.table)
 
 library(xtable)
 ncwc.table <- xtable(ncwc.table,
-                     caption = "The SMLR model's genotyping improvements relative to the HID SNP Genotyper Plugin (HSG).",
+                     caption = "The SMLR model’s genotyping improvements for all examined DNA quantities.",
+                     # caption = "The SMLR model's genotyping improvements relative to the HID SNP Genotyper Plugin (HSG).",
                      label = "tab:NC_WC",
                      digits = d_mat)
 
@@ -475,22 +476,10 @@ tab1 <- c(tab1[3:6],
           "\\null & \\null & \\multicolumn{6}{c}{5 individuals, 4 examinations} & \\multicolumn{4}{c}{18 individuals, 1 examination} \\\\",
           "\\cmidrule(lr){3-8} \\cmidrule(lr){9-12}",
           sub(" & DNA quantity (pg)", "\\multicolumn{2}{l}{DNA quantity (\\si{\\pg})}", tab1[10], fixed = TRUE),
-          # "\\multicolumn{2}{l}{$m$ used by MTKU} & 333 & 167 & 83 & 42 & 21 & 10 & 17 & 8 & 4 & 2 \\\\ ",
           sub("   & Number of SNPs", "\\multicolumn{2}{l}{Observed SNPs ($s_1\\!+\\!s_2\\!>\\!0$)}", tab1[11], fixed = TRUE),
           "\\midrule[2pt]",
-          sub("   & HSG no-calls", "\\multirow{2}{*}{HSG} & No-calls", tab1[12], fixed = TRUE),
+          sub("   & HSG no-calls", "\\multirow{2}{*}{HSG\\tnote{$*$}} & No-calls", tab1[12], fixed = TRUE),
           sub("HSG wrong calls", "Wrong calls", tab1[13], fixed = TRUE),
-          "\\midrule[1pt]",
-          "\\midrule[1pt]",
-          # sub("   & q aligning WCs", "\\multirow{3}{*}{MTK}  & $q$ aligning WCs\\tnote{$*$}", tab1[14], fixed = TRUE),
-          # "\\cmidrule(lr){2-12}",
-          # sub("MTK call rate", "Call rate", tab1[15], fixed = TRUE),
-          # sub("MTK no-calls", "No-calls", tab1[16], fixed = TRUE),
-          # "\\midrule[2pt]",
-          sub("   & q aligning WCs", "\\multirow{3}{*}{MTK\\tnote{$*$}}  & $q$ aligning WCs\\tnote{$\\dagger$}", tab1[17], fixed = TRUE),
-          "\\cmidrule(lr){2-12}",
-          sub("MTKU call rate", "Call rate", tab1[18], fixed = TRUE),
-          sub("MTKU no-calls", "No-calls", tab1[19], fixed = TRUE),
           "\\midrule[2pt]",
           sub("   & q aligning WCs", "\\multirow{4}{*}{SMLR\\tnote{$\\S$}}  & $q$ aligning WCs\\tnote{$\\dagger$}", tab1[20], fixed = TRUE),
           "\\cmidrule(lr){2-12}",
@@ -498,17 +487,6 @@ tab1 <- c(tab1[3:6],
           sub("SMLR no-calls", "No-calls", tab1[22], fixed = TRUE),
           "\\cmidrule(lr){2-12}",
           sub("NC-reduction", "NC-reduction (\\%)", tab1[23], fixed = TRUE),
-          "\\midrule[1pt]",
-          "\\midrule[1pt]",
-          # sub("   & q aligning NCs", "\\multirow{3}{*}{MTK} & $q$ aligning NCs\\tnote{$\\dagger$}", tab1[24], fixed = TRUE),
-          # "\\cmidrule(lr){2-12}",
-          # sub("MTK accuracy", "Accuracy", tab1[25], fixed = TRUE),
-          # sub("MTK wrong calls", "Wrong calls", tab1[26], fixed = TRUE),
-          # "\\midrule[2pt]",
-          sub("   & q aligning NCs", "\\multirow{3}{*}{MTK\\tnote{$*$}} & $q$ aligning NCs\\tnote{$\\ddagger$}", tab1[27], fixed = TRUE),
-          "\\cmidrule(lr){2-12}",
-          sub("MTKU accuracy", "Accuracy", tab1[28], fixed = TRUE),
-          sub("MTKU wrong calls", "Wrong calls", tab1[29], fixed = TRUE),
           "\\midrule[2pt]",
           sub("   & q aligning NCs", "\\multirow{4}{*}{SMLR\\tnote{$\\S$}} & $q$ aligning NCs\\tnote{$\\ddagger$}", tab1[30], fixed = TRUE),
           "\\cmidrule(lr){2-12}",
@@ -519,11 +497,9 @@ tab1 <- c(tab1[3:6],
           paste0(tab1[34], "[2pt]"),
           tab1[35],
           "\\begin{tablenotes}",
-          # "\\item[$*$] The smallest $q$ that aligns the WCs of each of the three methods MTK, MTKU, and SMLR according to \\eqref{eq:metric_CR}.",
-          # "\\item[$\\dagger$] The smallest $q$ that aligns the NCs of each of the three methods MTK, MTKU, and SMLR according to \\eqref{eq:metric_AC}.",
-          "\\item[$*$] Model by Mostad, Tillmar, and Kling with biallelic uniform prior, $e=0.06$, and $m\\approx \\text{DNA quantity (pg)} \\times 2/6$.",
-          "\\item[$\\dagger$] The smallest $q$ that aligns the WCs according to \\eqref{eq:metric_CR} for each of the two methods MTK and SMLR.",
-          "\\item[$\\ddagger$] The smallest $q$ that aligns the NCs according to \\eqref{eq:metric_AC} for each of the two methods MTK and SMLR.",
+          "\\item[$*$] Number of no-calls (NCs) and wrong calls (WCs) made by the HID SNP Genotyper Plugin (HSG).",
+          "\\item[$\\dagger$] The smallest $q$ that aligns the SMLR model's WCs according to \\eqref{eq:metric_CR}.",
+          "\\item[$\\ddagger$] The smallest $q$ that aligns the SMLR model's NCs according to \\eqref{eq:metric_AC}.",
           "\\item[$\\S$] Results are conservative and based on the SMLR model with an intercept fitted to square-root transformed allele signals from examinations of \\SI{25}{\\pg} and \\SI{50}{\\pg} DNA.",
           "\\end{tablenotes}",
           "\\end{threeparttable}",
@@ -532,6 +508,78 @@ tab1 <- c(tab1[3:6],
 
 write_lines(tab1, file.path("..", "article-FSIGEN", "table1.tex"))
 file.remove(file.path("..", "article-FSIGEN", "xtable1.tex"))
+```
+
+MTK table LaTeX-refinements
+```{r Table with MTK LaTeX-refinements}
+# tab1 <- read_lines(file.path("..", "article-FSIGEN", "xtable1.tex"))
+# 
+# tab1 <- c(tab1[3:6],
+#           "\\vspace{1mm}",
+#           "\\begin{adjustbox}{max width=\\textwidth}",
+#           "\\begin{threeparttable}",
+#           tab1[7], paste0(tab1[8], "[2pt]"),
+#           "\\null & \\null & \\multicolumn{6}{c}{First series:} & \\multicolumn{4}{c}{Second series:} \\\\",
+#           "\\null & \\null & \\multicolumn{6}{c}{5 individuals, 4 examinations} & \\multicolumn{4}{c}{18 individuals, 1 examination} \\\\",
+#           "\\cmidrule(lr){3-8} \\cmidrule(lr){9-12}",
+#           sub(" & DNA quantity (pg)", "\\multicolumn{2}{l}{DNA quantity (\\si{\\pg})}", tab1[10], fixed = TRUE),
+#           # "\\multicolumn{2}{l}{$m$ used by MTKU} & 333 & 167 & 83 & 42 & 21 & 10 & 17 & 8 & 4 & 2 \\\\ ",
+#           sub("   & Number of SNPs", "\\multicolumn{2}{l}{Observed SNPs ($s_1\\!+\\!s_2\\!>\\!0$)}", tab1[11], fixed = TRUE),
+#           "\\midrule[2pt]",
+#           sub("   & HSG no-calls", "\\multirow{2}{*}{HSG} & No-calls", tab1[12], fixed = TRUE),
+#           sub("HSG wrong calls", "Wrong calls", tab1[13], fixed = TRUE),
+#           "\\midrule[1pt]",
+#           "\\midrule[1pt]",
+#           # sub("   & q aligning WCs", "\\multirow{3}{*}{MTK}  & $q$ aligning WCs\\tnote{$*$}", tab1[14], fixed = TRUE),
+#           # "\\cmidrule(lr){2-12}",
+#           # sub("MTK call rate", "Call rate", tab1[15], fixed = TRUE),
+#           # sub("MTK no-calls", "No-calls", tab1[16], fixed = TRUE),
+#           # "\\midrule[2pt]",
+#           sub("   & q aligning WCs", "\\multirow{3}{*}{MTK\\tnote{$*$}}  & $q$ aligning WCs\\tnote{$\\dagger$}", tab1[17], fixed = TRUE),
+#           "\\cmidrule(lr){2-12}",
+#           sub("MTKU call rate", "Call rate", tab1[18], fixed = TRUE),
+#           sub("MTKU no-calls", "No-calls", tab1[19], fixed = TRUE),
+#           "\\midrule[2pt]",
+#           sub("   & q aligning WCs", "\\multirow{4}{*}{SMLR\\tnote{$\\S$}}  & $q$ aligning WCs\\tnote{$\\dagger$}", tab1[20], fixed = TRUE),
+#           "\\cmidrule(lr){2-12}",
+#           sub("SMLR call rate", "Call rate", tab1[21], fixed = TRUE),
+#           sub("SMLR no-calls", "No-calls", tab1[22], fixed = TRUE),
+#           "\\cmidrule(lr){2-12}",
+#           sub("NC-reduction", "NC-reduction (\\%)", tab1[23], fixed = TRUE),
+#           "\\midrule[1pt]",
+#           "\\midrule[1pt]",
+#           # sub("   & q aligning NCs", "\\multirow{3}{*}{MTK} & $q$ aligning NCs\\tnote{$\\dagger$}", tab1[24], fixed = TRUE),
+#           # "\\cmidrule(lr){2-12}",
+#           # sub("MTK accuracy", "Accuracy", tab1[25], fixed = TRUE),
+#           # sub("MTK wrong calls", "Wrong calls", tab1[26], fixed = TRUE),
+#           # "\\midrule[2pt]",
+#           sub("   & q aligning NCs", "\\multirow{3}{*}{MTK\\tnote{$*$}} & $q$ aligning NCs\\tnote{$\\ddagger$}", tab1[27], fixed = TRUE),
+#           "\\cmidrule(lr){2-12}",
+#           sub("MTKU accuracy", "Accuracy", tab1[28], fixed = TRUE),
+#           sub("MTKU wrong calls", "Wrong calls", tab1[29], fixed = TRUE),
+#           "\\midrule[2pt]",
+#           sub("   & q aligning NCs", "\\multirow{4}{*}{SMLR\\tnote{$\\S$}} & $q$ aligning NCs\\tnote{$\\ddagger$}", tab1[30], fixed = TRUE),
+#           "\\cmidrule(lr){2-12}",
+#           sub("SMLR accuracy", "Accuracy", tab1[31], fixed = TRUE),
+#           sub("SMLR wrong calls", "Wrong calls", tab1[32], fixed = TRUE),
+#           "\\cmidrule(lr){2-12}",
+#           sub("WC-reduction", "WC-reduction (\\%)", tab1[33], fixed = TRUE),
+#           paste0(tab1[34], "[2pt]"),
+#           tab1[35],
+#           "\\begin{tablenotes}",
+#           # "\\item[$*$] The smallest $q$ that aligns the WCs of each of the three methods MTK, MTKU, and SMLR according to \\eqref{eq:metric_CR}.",
+#           # "\\item[$\\dagger$] The smallest $q$ that aligns the NCs of each of the three methods MTK, MTKU, and SMLR according to \\eqref{eq:metric_AC}.",
+#           "\\item[$*$] Model by Mostad, Tillmar, and Kling (2023) with biallelic uniform prior, $e=0.06$, and $m\\approx \\text{DNA quantity (pg)} \\times 2/6$.",
+#           "\\item[$\\dagger$] The smallest $q$ that aligns the WCs according to \\eqref{eq:metric_CR} for each of the two methods MTK and SMLR.",
+#           "\\item[$\\ddagger$] The smallest $q$ that aligns the NCs according to \\eqref{eq:metric_AC} for each of the two methods MTK and SMLR.",
+#           "\\item[$\\S$] Results are conservative and based on the SMLR model with an intercept fitted to square-root transformed allele signals from examinations of \\SI{25}{\\pg} and \\SI{50}{\\pg} DNA.",
+#           "\\end{tablenotes}",
+#           "\\end{threeparttable}",
+#           "\\end{adjustbox}",
+#           tab1[36])
+# 
+# write_lines(tab1, file.path("..", "article-FSIGEN", "table1.tex"))
+# file.remove(file.path("..", "article-FSIGEN", "xtable1.tex"))
 ```
 
 

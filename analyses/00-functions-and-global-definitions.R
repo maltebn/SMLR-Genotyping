@@ -265,7 +265,7 @@ threshold_rule <- function(test_data, qc = list("MAF" = t_maf, "PPC" = t_ppc), g
 #------------------------------------------#
 # Model from Mostad, Tillmar, and Kling ####
 #------------------------------------------#
-predict_mostad_model <- function(df, m, e=0.003, g_prior=c("uniform_bi", "uniform_tetra"), negloglik_me=F) {
+predict_MTK_model <- function(df, m, e=0.003, g_prior=c("uniform_bi", "uniform_tetra"), negloglik_me=F) {
   if (is.character(g_prior)) {
     if (g_prior[1] == "uniform_bi") {
       g_prior <- df |> select(Target.ID, A1, A2) |> group_by(Target.ID) |> 
@@ -327,9 +327,9 @@ predict_mostad_model <- function(df, m, e=0.003, g_prior=c("uniform_bi", "unifor
              CG = CG+GC, CT = CT+TC,
              GT = GT+TG) |> select(AA, CC, GG, TT, AC, AG, AT, CG, CT, GT)
     
-    mostad_pmax <- apply(Pgc, MARGIN = 1, max)
-    mostad_pred <- apply(Pgc, MARGIN = 1, function(x) {names(Pgc)[which.max(x)]})
-    return(df |> mutate("Mostad_pred" = mostad_pred, "Mostad_pmax" = mostad_pmax))
+    MTK_pmax <- apply(Pgc, MARGIN = 1, max)
+    MTK_pred <- apply(Pgc, MARGIN = 1, function(x) {names(Pgc)[which.max(x)]})
+    return(df |> mutate("MTK_pred" = MTK_pred, "MTK_pmax" = MTK_pmax))
   } else {
     return(sum(-log(Pc)))
   }
