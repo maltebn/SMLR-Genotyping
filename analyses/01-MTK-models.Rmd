@@ -1,5 +1,5 @@
 ---
-title: "Estimate model from Mostad et al."
+title: "Estimate model by Mostad, Tillmar, and Kling (2023)"
 author: "Malte Bødkergaard Nielsen"
 date: "2025-03-10"
 output: html_document
@@ -78,15 +78,15 @@ dd_GT_both_pred <- names(dd_pred_dils) |> lapply(function(x) {
   m <- as.integer(round(2*as.numeric(x)/6))
   e <- 0.02
   dd_pred_dils[[x]] |>
-    # predict_mostad_model(m, e, g_prior = "uniform_bi")
-    # predict_mostad_model(m, e, g_prior = "uniform_tetra")
-    predict_mostad_model(m, e, g_prior = genotype_freq)
+    # predict_MTK_model(m, e, g_prior = "uniform_bi")
+    # predict_MTK_model(m, e, g_prior = "uniform_tetra")
+    predict_MTK_model(m, e, g_prior = genotype_freq)
 }) |> bind_rows()
 
 dd_GT_both_pred |> filter(Dilution >= 31.25) |> 
   summarise(sum(Genotype_pred != Genotype_true)) |> unlist() |> unname()
 dd_GT_both_pred |> filter(Dilution >= 31.25) |> 
-  summarise(sum(Mostad_pred != Genotype_true)) |> unlist() |> unname()
+  summarise(sum(MTK_pred != Genotype_true)) |> unlist() |> unname()
 dd_GT_both_pred |> filter(Dilution >= 31.25) |> 
   summarise(sum(Genotype == no_call)) |> unlist() |> unname()
 dd_GT_both_pred |> filter(Dilution >= 31.25) |> 
@@ -95,61 +95,61 @@ dd_GT_both_pred |> filter(Dilution >= 31.25) |>
 
 # Final model (after having done the below extensive explorations)
 ```{r}
-dd_mostad_final <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_final <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.06, genotype_freq)
+      predict_MTK_model(x, m, e=0.06, genotype_freq)
     }) |> bind_rows()
 }) |> bind_rows()
 
-dd_mostad_bi_final <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_bi_final <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.06, "uniform_bi")
+      predict_MTK_model(x, m, e=0.06, "uniform_bi")
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_u = Mostad_pred, Mostad_pmax_u = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_u = MTK_pred, MTK_pmax_u = MTK_pmax)
 
-dd_mostad_final <- dd_mostad_final |> 
-  left_join(dd_mostad_bi_final, by = c("Target.ID", "Dilution", "ID"))
+dd_MTK_final <- dd_MTK_final |> 
+  left_join(dd_MTK_bi_final, by = c("Target.ID", "Dilution", "ID"))
 
 
-saveRDS(dd_mostad_final, file.path("..", "data", "00_dd_mostad.rds"))
-# dd_mostad_final <- readRDS(file.path("..", "data", "00_dd_mostad.rds"))
+saveRDS(dd_MTK_final, file.path("..", "data", "00_dd_MTK.rds"))
+# dd_MTK_final <- readRDS(file.path("..", "data", "00_dd_MTK.rds"))
 ```
 
 
 ```{r}
-dd_mostad_final |> group_by(Dilution) |> 
+dd_MTK_final |> group_by(Dilution) |> 
   summarise(WC_hsg = sum(Genotype_true != Genotype & Genotype != no_call),
             WC_smlr = sum(Genotype_true != Genotype_pred),
-            WC_mostad = sum(Genotype_true != Mostad_pred),
-            WC_bi = sum(Genotype_true != Mostad_pred_u))
+            WC_MTK = sum(Genotype_true != MTK_pred),
+            WC_bi = sum(Genotype_true != MTK_pred_u))
 ```
 
 
 
-# Exploration of Mostad model (led to the above choices)
-The chunks below constitutes the exploration of the Mostad model that was done before deciding on the final model above.
+# Exploration of MTK model (led to the above choices)
+The chunks below constitutes the exploration of the MTK model that was done before deciding on the final model above.
 We have primarily looked into MLE choices for $e$ and $m$ estimated for each sample, but it turns out that the simple fixed values above give the highest prediction accuracy.
 
 ## Estimates of $m$ and $e$ per dilution using all data
 The objects `mle_e` and `mle_m` were determined by manually dialing in, i.e., alternating running the next two chunks while manually updating the values in the two objects after each iteration. 
 ```{r}
 mle_e <- c("6.25"=0.003, "12.5"=0.0029, "25"=0.0028, "31.25"=0.0022, "50"=0.0028, "62.5"=0.0027, "125"=0.0027, "250"=0.0027, "500"=0.0027, "1000"=0.0027)
-Lm6 <- data.frame("Dilution"=6.25, "m"=2*(2:10), "L"=sapply(2*(2:10), function(y) {predict_mostad_model(dd_pred_dils[["6.25"]], y, mle_e[["6.25"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm12 <- data.frame("Dilution"=12.5, "m"=2*(2:10), "L"=sapply(2*(2:10), function(y) {predict_mostad_model(dd_pred_dils[["12.5"]], y, mle_e[["12.5"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm25 <- data.frame("Dilution"=25, "m"=2*(3:12), "L"=sapply(2*(3:12), function(y) {predict_mostad_model(dd_pred_dils[["25"]], y, mle_e[["25"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm31 <- data.frame("Dilution"=31.25, "m"=2*(5:10), "L"=sapply(2*(5:10), function(y) {predict_mostad_model(dd_pred_dils[["31.25"]], y, mle_e[["31.25"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm50 <- data.frame("Dilution"=50, "m"=2*(6:12), "L"=sapply(2*(6:12), function(y) {predict_mostad_model(dd_pred_dils[["50"]], y, mle_e[["50"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm62 <- data.frame("Dilution"=62.5, "m"=2*(7:15), "L"=sapply(2*(7:15), function(y) {predict_mostad_model(dd_pred_dils[["62.5"]], y, mle_e[["62.5"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm125 <- data.frame("Dilution"=125, "m"=2*(11:20), "L"=sapply(2*(11:20), function(y) {predict_mostad_model(dd_pred_dils[["125"]], y, mle_e[["125"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm250 <- data.frame("Dilution"=250, "m"=2*(21:30), "L"=sapply(2*(21:30), function(y) {predict_mostad_model(dd_pred_dils[["250"]], y, mle_e[["250"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm500 <- data.frame("Dilution"=500, "m"=2*(46:56), "L"=sapply(2*(46:56), function(y) {predict_mostad_model(dd_pred_dils[["500"]], y, mle_e[["500"]], g_prior = genotype_freq, negloglik_me = T)}))
-Lm1000 <- data.frame("Dilution"=1000, "m"=2*(58:67), "L"=sapply(2*(58:67), function(y) {predict_mostad_model(dd_pred_dils[["1000"]], y, mle_e[["1000"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm6 <- data.frame("Dilution"=6.25, "m"=2*(2:10), "L"=sapply(2*(2:10), function(y) {predict_MTK_model(dd_pred_dils[["6.25"]], y, mle_e[["6.25"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm12 <- data.frame("Dilution"=12.5, "m"=2*(2:10), "L"=sapply(2*(2:10), function(y) {predict_MTK_model(dd_pred_dils[["12.5"]], y, mle_e[["12.5"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm25 <- data.frame("Dilution"=25, "m"=2*(3:12), "L"=sapply(2*(3:12), function(y) {predict_MTK_model(dd_pred_dils[["25"]], y, mle_e[["25"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm31 <- data.frame("Dilution"=31.25, "m"=2*(5:10), "L"=sapply(2*(5:10), function(y) {predict_MTK_model(dd_pred_dils[["31.25"]], y, mle_e[["31.25"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm50 <- data.frame("Dilution"=50, "m"=2*(6:12), "L"=sapply(2*(6:12), function(y) {predict_MTK_model(dd_pred_dils[["50"]], y, mle_e[["50"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm62 <- data.frame("Dilution"=62.5, "m"=2*(7:15), "L"=sapply(2*(7:15), function(y) {predict_MTK_model(dd_pred_dils[["62.5"]], y, mle_e[["62.5"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm125 <- data.frame("Dilution"=125, "m"=2*(11:20), "L"=sapply(2*(11:20), function(y) {predict_MTK_model(dd_pred_dils[["125"]], y, mle_e[["125"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm250 <- data.frame("Dilution"=250, "m"=2*(21:30), "L"=sapply(2*(21:30), function(y) {predict_MTK_model(dd_pred_dils[["250"]], y, mle_e[["250"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm500 <- data.frame("Dilution"=500, "m"=2*(46:56), "L"=sapply(2*(46:56), function(y) {predict_MTK_model(dd_pred_dils[["500"]], y, mle_e[["500"]], g_prior = genotype_freq, negloglik_me = T)}))
+Lm1000 <- data.frame("Dilution"=1000, "m"=2*(58:67), "L"=sapply(2*(58:67), function(y) {predict_MTK_model(dd_pred_dils[["1000"]], y, mle_e[["1000"]], g_prior = genotype_freq, negloglik_me = T)}))
 for (dm in list(Lm6, Lm12, Lm25, Lm31, Lm50, Lm62, Lm125, Lm250, Lm500, Lm1000)) {
   m_min <- dm$m[which.min(dm$L)]
   plot(dm$m, dm$L, xlab = "m", ylab = "Likelihood",
@@ -162,7 +162,7 @@ OBS: the DNA amount was only quantified for 1000 pg (with some variance), and fo
 For DNA amounts $31.25\ \text{pg}$ to $62.5\ \text{pg}$, the MLE for $m$ matches the expected number of templates for the DNA amount quite well (within three templates or less than two cells).
 
 At $125\ \text{pg}$ and above, the discrepancy between the MLE and the expected number of templates seems rather big.
-However, this isn't expected to alter the Mostad model much, since $m$ enters the model as a parameter determining the proportions $q$ and $1-q$ of the two nucleotides of the true genotype: $q = k/m \sim \text{Binomial}(m, 1/2)$.
+However, this isn't expected to alter the MTK model much, since $m$ enters the model as a parameter determining the proportions $q$ and $1-q$ of the two nucleotides of the true genotype: $q = k/m \sim \text{Binomial}(m, 1/2)$.
 Thus, for high $m$, we have $q \approx 1/2$.
 That is, the probability function has most of its mass between $0.4$ and $0.6$.
 The importance lies in $m$ being captured quite well at lower values where $q$ has a chance of being zero or one, and this does indeed seem to be the case.
@@ -179,25 +179,25 @@ e_seq <- seq(0.0019, 0.0033, 0.0001)
 # e_seq <- seq(0.005, 0.05, 0.005)
 
 Le6 <- data.frame("Dilution"=6.25, "m"=mle_m[["6.25"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["6.25"]], m=mle_m[["6.25"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["6.25"]], m=mle_m[["6.25"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le12 <- data.frame("Dilution"=12.5, "m"=mle_m[["12.5"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["12.5"]], m=mle_m[["12.5"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["12.5"]], m=mle_m[["12.5"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le25 <- data.frame("Dilution"=25, "m"=mle_m[["25"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["25"]], m=mle_m[["25"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["25"]], m=mle_m[["25"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le31 <- data.frame("Dilution"=31.25, "m"=mle_m[["31.25"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["31.25"]], m=mle_m[["31.25"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["31.25"]], m=mle_m[["31.25"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le50 <- data.frame("Dilution"=50, "m"=mle_m[["50"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["50"]], m=mle_m[["50"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["50"]], m=mle_m[["50"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le62 <- data.frame("Dilution"=62.5, "m"=mle_m[["62.5"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["62.5"]], m=mle_m[["62.5"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["62.5"]], m=mle_m[["62.5"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le125 <- data.frame("Dilution"=125, "m"=mle_m[["125"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["125"]], m=mle_m[["125"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["125"]], m=mle_m[["125"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le250 <- data.frame("Dilution"=250, "m"=mle_m[["250"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["250"]], m=mle_m[["250"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["250"]], m=mle_m[["250"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le500 <- data.frame("Dilution"=500, "m"=mle_m[["500"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["500"]], m=mle_m[["500"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["500"]], m=mle_m[["500"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 Le1000 <- data.frame("Dilution"=1000, "m"=mle_m[["1000"]], "e"=e_seq, "L"=sapply(e_seq, function(y) {
-  predict_mostad_model(dd_pred_dils[["1000"]], m=mle_m[["1000"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
+  predict_MTK_model(dd_pred_dils[["1000"]], m=mle_m[["1000"]], e=y, g_prior = genotype_freq, negloglik_me = T)}))
 for (de in list(Le6, Le12, Le25, Le31, Le50, Le62, Le125, Le250, Le500, Le1000)) {
   e_min <- de$e[which.min(de$L)]
   plot(de$e, de$L, xlab = "e", ylab = "Likelihood",
@@ -207,7 +207,7 @@ for (de in list(Le6, Le12, Le25, Le31, Le50, Le62, Le125, Le250, Le500, Le1000))
 ```
 
 # Estimates of $m$ and $e$ per dilution per individual and examination/run
-When the Mostad model is applied in practice, then $m$ should in principle be given for each new sample, individually.
+When the MTK model is applied in practice, then $m$ should in principle be given for each new sample, individually.
 This gives us a lot of models, so in order to estimate the parameters efficiently, we only compute the negative log-likelihood in certain points and then apply a loess-regression which can be intrapolated to get the rest of the points needed to determine the MLE. 
 ```{r}
 dd_ind <- split(dd_GT_both_pred, dd_GT_both_pred$Dilution) |> lapply(function(x) {split(x, x$ID)})
@@ -241,7 +241,7 @@ m_dil_ind <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -275,7 +275,7 @@ e_dil_ind <- lapply(names(dd_ind), function(x) {
   e_likelihoods <- lapply(names(dd_dil), function(id) {
     m <- filter(m_dil_ind, Dilution == as.numeric(x), ID == id)$m_est
     sapply(e_search, function(e) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   e_est <- sapply(e_likelihoods, function(i) {
@@ -332,7 +332,7 @@ m_dil_ind2 <- lapply(names(dd_ind), function(x) {
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     e <- filter(e_dil_ind, Dilution == as.numeric(x), ID == id)$e_est
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -375,7 +375,7 @@ e_dil_ind2 <- lapply(names(dd_ind), function(x) {
   e_likelihoods <- lapply(names(dd_dil), function(id) {
     m <- filter(m_dil_ind2, Dilution == as.numeric(x), ID == id)$m_est
     sapply(e_search, function(e) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   e_est <- sapply(e_likelihoods, function(i) {
@@ -442,7 +442,7 @@ m_dil_ind_bi <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -471,7 +471,7 @@ e_dil_ind_bi <- lapply(names(dd_ind), function(x) {
   e_likelihoods <- lapply(names(dd_dil), function(id) {
     m <- filter(m_dil_ind_bi, Dilution == as.numeric(x), ID == id)$m_est
     sapply(e_search, function(e) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
     })
   })
   e_est <- sapply(e_likelihoods, function(i) {
@@ -519,7 +519,7 @@ m_dil_ind2_bi <- lapply(names(dd_ind), function(x) {
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     e <- filter(e_dil_ind_bi, Dilution == as.numeric(x), ID == id)$e_est
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -556,7 +556,7 @@ e_dil_ind2_bi <- lapply(names(dd_ind), function(x) {
   e_likelihoods <- lapply(names(dd_dil), function(id) {
     m <- filter(m_dil_ind2_bi, Dilution == as.numeric(x), ID == id)$m_est
     sapply(e_search, function(e) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = "uniform_bi", negloglik_me = T)
     })
   })
   e_est <- sapply(e_likelihoods, function(i) {
@@ -651,7 +651,7 @@ m_dil_ind_01 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -701,7 +701,7 @@ m_dil_ind_015 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -751,7 +751,7 @@ m_dil_ind_018 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -801,7 +801,7 @@ m_dil_ind_02 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -851,7 +851,7 @@ m_dil_ind_03 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -901,7 +901,7 @@ m_dil_ind_04 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -951,7 +951,7 @@ m_dil_ind_05 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1001,7 +1001,7 @@ m_dil_ind_06 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1051,7 +1051,7 @@ m_dil_ind_07 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1101,7 +1101,7 @@ m_dil_ind_1 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1142,7 +1142,7 @@ m_dil_ind_11 <- lapply(names(dd_ind)[c(1:3, 5:6)], function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1183,7 +1183,7 @@ m_dil_ind_12 <- lapply(names(dd_ind)[c(1:3, 5:6)], function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1224,7 +1224,7 @@ m_dil_ind_13 <- lapply(names(dd_ind)[c(1:3, 5:6)], function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1276,7 +1276,7 @@ m_dil_ind_14 <- lapply(names(dd_ind), function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1307,7 +1307,7 @@ m_dil_ind_15 <- lapply("6.25", function(x) {
   m_search <- c(2, 4, 8, 12, 16, 20, 26)
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1359,7 +1359,7 @@ m_dil_ind_2 <- lapply(names(dd_ind)[-c(9:10)], function(x) {
   }
   m_likelihoods <- lapply(names(dd_dil), function(id) {
     sapply(m_search, function(m) {
-      predict_mostad_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
+      predict_MTK_model(dd_dil[[id]], m, e, g_prior = genotype_freq, negloglik_me = T)
     })
   })
   m_est <- sapply(m_likelihoods, function(i) {
@@ -1407,250 +1407,250 @@ In a few chunks ahead, we evaluated the models' number of WCs (within each dilut
 It turns out that $e \in [0.01; 0.06]$ generally gives fewer WCs (practically independent of the dilution).
 It also turns out that the model isn't very prone to whether $m$ is the MLE or the value derived from the DNA amount - in fact, the latter seems to give slightly fewer WCs, or at least the same amount of WCs but for a wider range of $e$-values.
 
-All in all, the Mostad model generally seems to produce the fewest WCs by choosing $e = 0.06$ and setting $m$ to the value expected from the amount of DNA.
+All in all, the MTK model generally seems to produce the fewest WCs by choosing $e = 0.06$ and setting $m$ to the value expected from the amount of DNA.
 This suggest a static model, so cross-validation would only make sense in order to evaluate the models sensitivity to the choice of prior.
 However, using a uniform biallelic prior will also help in such assessment, and it is easier to defend, since we should else argue how much the prior should be allowed to vary during a cross-validation.
-Therefore, the static Mostad model is evaluated directly on all samples within each dilution (configuration of $m$), and the results are appended to Table 1.
+Therefore, the static MTK model is evaluated directly on all samples within each dilution (configuration of $m$), and the results are appended to Table 1.
 
-### Assessment of the number of WCs produces by different configurations of the Mostad model.
+### Assessment of the number of WCs produces by different configurations of the MTK model.
 ```{r}
 # The original ID-variable in the first dilution series has been
 # overwritten with interaction(ID, Run), such that the same individual
 # got new IDs for each run/examination.
-dd_mostad <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       m <- filter(m_dil_ind2, Dilution == dil, ID == id)$m_est
       e <- filter(e_dil_ind2, Dilution == dil, ID == id)$e_est
-      predict_mostad_model(x, m, e, genotype_freq)
+      predict_MTK_model(x, m, e, genotype_freq)
     }) |> bind_rows()
 }) |> bind_rows()
 
-dd_mostad_bi <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_bi <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       m <- filter(m_dil_ind2, Dilution == dil, ID == id)$m_est
       e <- filter(e_dil_ind2, Dilution == dil, ID == id)$e_est
-      predict_mostad_model(x, m, e, "uniform_bi")
+      predict_MTK_model(x, m, e, "uniform_bi")
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_bi = Mostad_pred, Mostad_pmax_bi = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_bi = MTK_pred, MTK_pmax_bi = MTK_pmax)
 
-dd_mostad_01 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_01 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_01, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.01, genotype_freq)
+      predict_MTK_model(x, m, e=0.01, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_01 = Mostad_pred, Mostad_pmax_01 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_01 = MTK_pred, MTK_pmax_01 = MTK_pmax)
 
-dd_mostad_015 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_015 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_015, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.015, genotype_freq)
+      predict_MTK_model(x, m, e=0.015, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_015 = Mostad_pred, Mostad_pmax_015 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_015 = MTK_pred, MTK_pmax_015 = MTK_pmax)
 
-dd_mostad_018 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_018 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_018, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.018, genotype_freq)
+      predict_MTK_model(x, m, e=0.018, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_018 = Mostad_pred, Mostad_pmax_018 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_018 = MTK_pred, MTK_pmax_018 = MTK_pmax)
 
-dd_mostad_02 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_02 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_02, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.02, genotype_freq)
+      predict_MTK_model(x, m, e=0.02, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_02 = Mostad_pred, Mostad_pmax_02 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_02 = MTK_pred, MTK_pmax_02 = MTK_pmax)
 
-dd_mostad_03 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_03 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_03, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.03, genotype_freq)
+      predict_MTK_model(x, m, e=0.03, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_03 = Mostad_pred, Mostad_pmax_03 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_03 = MTK_pred, MTK_pmax_03 = MTK_pmax)
 
-dd_mostad_04 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_04 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_04, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.04, genotype_freq)
+      predict_MTK_model(x, m, e=0.04, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_04 = Mostad_pred, Mostad_pmax_04 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_04 = MTK_pred, MTK_pmax_04 = MTK_pmax)
 
-dd_mostad_05 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_05 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_05, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.05, genotype_freq)
+      predict_MTK_model(x, m, e=0.05, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_05 = Mostad_pred, Mostad_pmax_05 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_05 = MTK_pred, MTK_pmax_05 = MTK_pmax)
 
-dd_mostad_06 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_06 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_06, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.06, genotype_freq)
+      predict_MTK_model(x, m, e=0.06, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_06 = Mostad_pred, Mostad_pmax_06 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_06 = MTK_pred, MTK_pmax_06 = MTK_pmax)
 
-dd_mostad_07 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_07 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_07, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.07, genotype_freq)
+      predict_MTK_model(x, m, e=0.07, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_07 = Mostad_pred, Mostad_pmax_07 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_07 = MTK_pred, MTK_pmax_07 = MTK_pmax)
 
-dd_mostad_10 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_10 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_1, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.1, genotype_freq)
+      predict_MTK_model(x, m, e=0.1, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_10 = Mostad_pred, Mostad_pmax_10 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_10 = MTK_pred, MTK_pmax_10 = MTK_pmax)
 
-dd_mostad_11 <- names(dd_pred_dils)[c(1:3, 5:6)] |> lapply(function(dil) {
+dd_MTK_11 <- names(dd_pred_dils)[c(1:3, 5:6)] |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_11, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.11, genotype_freq)
+      predict_MTK_model(x, m, e=0.11, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_11 = Mostad_pred, Mostad_pmax_11 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_11 = MTK_pred, MTK_pmax_11 = MTK_pmax)
 
-dd_mostad_12 <- names(dd_pred_dils)[c(1:3, 5:6)] |> lapply(function(dil) {
+dd_MTK_12 <- names(dd_pred_dils)[c(1:3, 5:6)] |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_12, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.12, genotype_freq)
+      predict_MTK_model(x, m, e=0.12, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_12 = Mostad_pred, Mostad_pmax_12 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_12 = MTK_pred, MTK_pmax_12 = MTK_pmax)
 
-dd_mostad_13 <- names(dd_pred_dils)[c(1:3, 5:6)] |> lapply(function(dil) {
+dd_MTK_13 <- names(dd_pred_dils)[c(1:3, 5:6)] |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_13, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.13, genotype_freq)
+      predict_MTK_model(x, m, e=0.13, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_13 = Mostad_pred, Mostad_pmax_13 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_13 = MTK_pred, MTK_pmax_13 = MTK_pmax)
 
-dd_mostad_14 <- names(dd_pred_dils) |> lapply(function(dil) {
+dd_MTK_14 <- names(dd_pred_dils) |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_14, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.14, genotype_freq)
+      predict_MTK_model(x, m, e=0.14, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_14 = Mostad_pred, Mostad_pmax_14 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_14 = MTK_pred, MTK_pmax_14 = MTK_pmax)
 
-dd_mostad_15 <- "6.25" |> lapply(function(dil) {
+dd_MTK_15 <- "6.25" |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_15, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.15, genotype_freq)
+      predict_MTK_model(x, m, e=0.15, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_15 = Mostad_pred, Mostad_pmax_15 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_15 = MTK_pred, MTK_pmax_15 = MTK_pmax)
 
-dd_mostad_20 <- names(dd_pred_dils)[-c(9:10)] |> lapply(function(dil) {
+dd_MTK_20 <- names(dd_pred_dils)[-c(9:10)] |> lapply(function(dil) {
   split(dd_pred_dils[[dil]], dd_pred_dils[[dil]]$ID) |> 
     lapply(function(x) {
       id <- unique(x$ID)
       # m <- filter(m_dil_ind_2, Dilution == dil, ID == id)$m_est
       m <- round(2*as.numeric(dil)/6)
-      predict_mostad_model(x, m, e=0.2, genotype_freq)
+      predict_MTK_model(x, m, e=0.2, genotype_freq)
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, Mostad_pred_20 = Mostad_pred, Mostad_pmax_20 = Mostad_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_20 = MTK_pred, MTK_pmax_20 = MTK_pmax)
 
-dd_mostad_all <- dd_mostad |> 
-  left_join(dd_mostad_bi, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_01, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_015, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_018, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_02, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_03, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_04, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_05, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_06, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_07, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_10, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_11, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_12, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_13, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_14, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_15, by = c("Target.ID", "Dilution", "ID")) |> 
-  left_join(dd_mostad_20, by = c("Target.ID", "Dilution", "ID"))
+dd_MTK_all <- dd_MTK |> 
+  left_join(dd_MTK_bi, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_01, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_015, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_018, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_02, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_03, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_04, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_05, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_06, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_07, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_10, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_11, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_12, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_13, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_14, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_15, by = c("Target.ID", "Dilution", "ID")) |> 
+  left_join(dd_MTK_20, by = c("Target.ID", "Dilution", "ID"))
 ```
 
 We will explore how many WCs the different $e$ parameters make within each dilution.
 It looks like $e \in [0.02; 0.14]$ gives the fewest WCs for different dillutions.
 ```{r}
-dd_mostad_all |> group_by(Dilution) |> 
+dd_MTK_all |> group_by(Dilution) |> 
   summarise(WC_smlr = sum(Genotype_true != Genotype_pred),
-            WC_gf = sum(Genotype_true != Mostad_pred),
-            WC_bi = sum(Genotype_true != Mostad_pred_bi),
-            # WC_01 = sum(Genotype_true != Mostad_pred_01),
-            # WC_015 = sum(Genotype_true != Mostad_pred_015),
-            # WC_018 = sum(Genotype_true != Mostad_pred_018),
-            WC_02 = sum(Genotype_true != Mostad_pred_02),
-            WC_03 = sum(Genotype_true != Mostad_pred_03),
-            WC_04 = sum(Genotype_true != Mostad_pred_04),
-            WC_05 = sum(Genotype_true != Mostad_pred_05),
-            WC_06 = sum(Genotype_true != Mostad_pred_06),
-            WC_07 = sum(Genotype_true != Mostad_pred_07),
-            WC_10 = sum(Genotype_true != Mostad_pred_10),
-            WC_11 = sum(Genotype_true != Mostad_pred_11),
-            WC_12 = sum(Genotype_true != Mostad_pred_12),
-            WC_13 = sum(Genotype_true != Mostad_pred_13),
-            WC_14 = sum(Genotype_true != Mostad_pred_14),
-            WC_15 = sum(Genotype_true != Mostad_pred_15),
-            WC_20 = sum(Genotype_true != Mostad_pred_20))
+            WC_gf = sum(Genotype_true != MTK_pred),
+            WC_bi = sum(Genotype_true != MTK_pred_bi),
+            # WC_01 = sum(Genotype_true != MTK_pred_01),
+            # WC_015 = sum(Genotype_true != MTK_pred_015),
+            # WC_018 = sum(Genotype_true != MTK_pred_018),
+            WC_02 = sum(Genotype_true != MTK_pred_02),
+            WC_03 = sum(Genotype_true != MTK_pred_03),
+            WC_04 = sum(Genotype_true != MTK_pred_04),
+            WC_05 = sum(Genotype_true != MTK_pred_05),
+            WC_06 = sum(Genotype_true != MTK_pred_06),
+            WC_07 = sum(Genotype_true != MTK_pred_07),
+            WC_10 = sum(Genotype_true != MTK_pred_10),
+            WC_11 = sum(Genotype_true != MTK_pred_11),
+            WC_12 = sum(Genotype_true != MTK_pred_12),
+            WC_13 = sum(Genotype_true != MTK_pred_13),
+            WC_14 = sum(Genotype_true != MTK_pred_14),
+            WC_15 = sum(Genotype_true != MTK_pred_15),
+            WC_20 = sum(Genotype_true != MTK_pred_20))
 ```
 
 
 As seen below, even with an offset of just 1 (in the creation of the prior), it doesn't look like that the wrongly called homozygous genotypes are wrong because of extreme allele frequencies used to create the prior: the allele counts for these homozygous wrong calls are not at all extreme.
-But we note that the Mostad model sometimes estimate a heterozygous genotype probability so high that it has been rounded to one even though the ratio $\frac{s_{min}}{s_{max}}$ was very low, so apparently the Mostad model sees even a few reads as high evidence for an actual allele present: this is likely because of the very low $e$-estimates.
+But we note that the MTK model sometimes estimate a heterozygous genotype probability so high that it has been rounded to one even though the ratio $\frac{s_{min}}{s_{max}}$ was very low, so apparently the MTK model sees even a few reads as high evidence for an actual allele present: this is likely because of the very low $e$-estimates.
 Therefore, we also tested a model with $e=0.02$ as used in Mostad et al. which actually had fewer wrong calls, but the model sometimes still estimated a high heterozygous genotype probability despite a low ratio of $\frac{s_{min}}{s_{max}}$.
 ```{r}
-mostad_wc <- dd_mostad_all |> 
-  filter(Mostad_pred != Genotype_true, Dilution >= 31.25) |> 
+MTK_wc <- dd_MTK_all |> 
+  filter(MTK_pred != Genotype_true, Dilution >= 31.25) |> 
   left_join(allele_counts[,c("Target.ID", "N1", "N2")], by = "Target.ID")
-mostad_wc <- dd_mostad_all |> 
-  filter(Mostad_pred_06 != Genotype_true, Dilution >= 31.25) |> 
+MTK_wc <- dd_MTK_all |> 
+  filter(MTK_pred_06 != Genotype_true, Dilution >= 31.25) |> 
   left_join(allele_counts[,c("Target.ID", "N1", "N2")], by = "Target.ID")
 ```

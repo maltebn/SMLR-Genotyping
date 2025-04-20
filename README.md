@@ -17,7 +17,7 @@ Defines functions and global objects to be used throughout the scripts.
 ### 00-set-up-data.Rmd
 Prepares the raw data files for further analysis.
 
-### 01-Mostad-models.Rmd
+### 01-MTK-models.Rmd
 Exploration/selection of parameter settings for the observational model by Mostad, Tillmar, and Kling (MTK).
 Using these to predict MTK genotypes within each dilution level.
 
