@@ -109,13 +109,7 @@ While amplification-based genotyping tools, such as the HID SNP Genotyper Plugin
 To reduce the number of wrong calls~(WCs), it seems natural to declare a no-call~(NC) for genotypes not passing the quality checks~(QCs) provided by the HSG.
 However, for low amounts of input DNA, this approach significantly decreases the call rate and still struggles to filter out WCs.
 
-In a recent article, Mostad et al. (2023)~\cite{mostad} present a probabilistic approach to handle missing data (no-calls) in low-coverage sequencing.
-They integrate genotype likelihoods directly into computations on relationship analysis.
-At a given locus, they compute the probability of the observed data by conditioning on and summing over relevant combinations of alleles.
-In this way, they do not need to deal with genotype classification and effectively avoid potential misclassified genotypes.
-They compare this relationship-classification approach to a version in which genotypes are called using the maximal posterior genotype probability obtained by combining their genotype likelihoods with prior probabilities of the genotypes (based on allele frequencies).
-Using a multinomial distribution, their model elegantly handles both imbalances in PCR amplicons and noise reads unrelated to the true genotype.
-However, the model is, therefore, limited to integer data.
+Other probabilistic approaches have been proposed to handle uncertainty in low-coverage sequencing~\cite{mostad}, but they either integrate genotype likelihoods directly into downstream computations or rely on prior information about the genotypes, such as population allele frequencies, and some are restricted to integer-based allele count data.
 
 We introduce a Symmetric Multinomial Logistic Regression (SMLR) model and a framework for refined NC declaration that improves genotyping accuracy and call rate, especially in challenging conditions.
 The SMLR model does not rely on prior genotype probabilities and handles both integer and continuous allele signals.
@@ -154,30 +148,6 @@ Along with its genotype calls, it outputs three quality checks:
 \end{itemize}
 As seen in the leftmost and middle plots of Fig.~\ref{fig:methods}, the HSG's genotype calls and determination of NCs are not based on these QCs alone, so genotypes are often called despite the presence of QC flags, and NCs are declared even when no QC flag is present~\cite[p.~35]{hid}.
 Therefore, Enforcing the Quality Checks~(EQC) by turning genotypes with QC flags into NCs will increase the number of NCs and thus reduce the call rate.
-
-
-\subsection{The observational model by Mostad, Tillmar, and Kling}
-In the article~\cite{mostad}, Mostad et al. define a model for the observed counts $c = (c_A, c_C, c_G, c_T)$ at each nucleotide.
-With the phased genotype denoted by $g = (g_1, g_2)$, they introduce the proportion, $\pi = k/m$, of DNA amplicons from $g_1$, where $m$ represents the approximate number of DNA templates before PCR, and $k \sim \text{Binomial}\left(m, 1/2\right)$.
-They then model $c \mid \pi, g \sim \text{Multinomial}\left(\sum_i c_i, p\right)$ with $p = (p_A, p_C, p_G, p_T)$ and
-\begin{align*}
-p_i = \left(1-e\right) \left(\pi I\left(g_1 = i\right) + \left(1-\pi\right) I\left(g_2 = i\right)\right) + \frac{e}{4}
-\end{align*}
-where $0 < e <1$ is an overall error parameter related to noise counts, such that each count has the following independent probability of being a type not present in the true genotype:
-\begin{align}\label{eq:e}
-3e/4\ \text{for homozygous genotypes};\quad 2e/4\ \text{for heterozygous genotypes}.
-\end{align}
-Since $\pi$ is assumed independent of $g$, the law of total probability gives
-\begin{align*}
-P\left(c \mid g\right) = \frac{\left(\sum_i c_i\right)!}{c_A! c_C! c_G! c_T!} \sum_{k=0}^m p_A^{c_A} p_C^{c_C} p_G^{c_G} p_T^{c_T}\ \binom{m}{k}\ 2^{-m}
-\end{align*}
-where each $p_i$ depends on $k$ through $\pi$. With $P\left(g\right)$ being prior probabilities of the genotypes, a prediction model can be found by Bayes rule:
-\begin{align*}
-P\left(g \mid c\right) = \frac{P\left(c \mid g\right) P\left(g\right)}{\sum_{g} P\left(c \mid g\right) P\left(g\right)}.
-\end{align*}
-If the sample to be genotyped is from an individual with known origin, it is natural to base $P(g)$ on population allele frequencies.
-However, in forensic genetics, such knowledge is often absent.
-The prediction model by Mostad, Tillmar, and Kling will thus be used with a biallelic uniform prior for the phased genotypes and referred to as MTK.
 
 
 \subsection{The Symmetric Multinomial Logistic Regression (SMLR) Model}
@@ -254,12 +224,6 @@ The bootstrap analysis also demonstrates the stability of the SMLR model's decis
 
 
 \subsection{Assessing the Effectiveness of the SMLR Model}
-To demonstrate the practical relevance of the SMLR model, it must outperform the HSG.
-Additionally, evaluating the SMLR model against the MTK model provides further insight into its comparative performance.
-Thus, the call rate and accuracy from the HSG serve as reference points for assessing each model.
-
-
-\subsubsection{SMLR versus HSG}
 The SMLR model is primarily designed as a predictive tool for classification, focusing on the practical application in forensic genotyping rather than theoretical explanatory power~\cite{shmueli}.
 As such, the evaluation metrics relevant for this study are call rate~($CR$) and accuracy~($AC$), where $CR$ is defined as the percentage of calls that are not~NCs, and $AC$ as the percentage of correct calls when disregarding~NCs:
 \begin{align*}
@@ -295,19 +259,6 @@ Repeating this process with different data splits helps estimate how the model w
 To assess robustness and generalisability, several cross-validations were conducted, considering cases where training and test subsets were drawn from the same DNA dilutions and different dilutions.
 
 This structured approach enables comparing the models in an objective setting and ultimately allows for identifying the optimal model in forensic genetic contexts.
-
-
-\subsubsection{Comparison of SMLR with MTK}
-This article does not seek to evaluate the MTK model’s sensitivity to variations in the $e$ and $m$ parameters or to the specification of $P(g)$.
-However, an extensive parameter search was conducted to explore whether $m$ and $e$ should be different for each sample to achieve maximal classification accuracy.
-
-Since the MTK model includes a prior $P(g)$, the marginal distribution $P(c) = \sum_g P(c \mid g) P(g)$ was used to determine MLEs for $m$ and $e$.
-The classification accuracies for the MLEs were compared to the accuracies when fixed parameter values were used, with $e$ varied by $0.01$ across the range $\left[0.01; 0.14\right]$, and $m$ based on the sample's DNA amount by rounding to the nearest integer of
-\begin{equation}\label{eq:m}
-\frac{\text{DNA amount}\ [\text{pg}]}{6\ [\text{pg/cell}]} \times 2\ \left[\text{templates} / \text{cell}\right].
-\end{equation}
-
-The resulting MTK models were applied to all data at each DNA dilution level and evaluated with metrics equivalent to~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC}.
 
 
 \subsection{Software}
@@ -357,21 +308,11 @@ converting flagged observations to NCs has a significant cost to the call rate a
 Hence, comparison with the EQC method is not meaningful.
 The ensuing results affirm the SMLR model's utility in forensic genotyping, demonstrating its capacity to improve call rate and accuracy across various testing scenarios.
 
-The parameter search for the MTK model found the samples’ MLEs of $e$ to be very small, with medians around $0.003$ for each DNA dilution level.
-The MLEs of $m$ matched~\eqref{eq:m} well for the lower DNA amounts, but had large discrepancies for the high DNA amounts.
-However, for large $m$, the distribution of $\pi$ has negligible probability mass at the extreme ends, so these discrepancies are not expected to affect the model.
-Using the MLEs for $e$ gave rather low classification accuracies since the model would interpret many noise counts as evidence for an allele due to the very low $e$.
-For data with known genotypes, more appropriate values for $e$ could be found using~\eqref{eq:e}, i.e. by multiplying the proportion of noise counts for the homozygous and heterozygous genotypes by $4/3$ and $2$, respectively.
-However, a direct parameter search showed that $e = 0.06$ would provide some of the highest classification accuracies for each DNA amount, and that the accuracy would not change whether $m$ was based on the DNA quantity or maximum likelihood estimation.
-Thus, in the following, the MTK model is used with $e = 0.06$ and $m$ set to the quantity-based version from~\eqref{eq:m}.
-
 
 \subsection{Pre-Analysis}
 Table~\ref{tab:NC_WC} demonstrates how a fit of the SMLR model with an intercept and a square root transformation reduces the NCs for each DNA amount examined when compared to the HSG using~\eqref{eq:metric_CR} and similarly reduces the WCs when compared using~\eqref{eq:metric_AC}.
 Thus, for each column in Table~\ref{tab:NC_WC}, this SMLR model gives fewer NCs and WCs when the $q$-threshold lies between the model’s two alignment values displayed in that column, implying simultaneous improvements in call rate and accuracy.
 Since the metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} favour the HSG, and the cross-validations presented later show that the fit used in Table~\ref{tab:NC_WC} is not necessarily the best performing, the improvements displayed in the table are conservative.
-
-Table~\ref{tab:NC_WC} also shows that the accuracy of the SMLR model is comparable to that of the MTK model, with a slight advantage for SMLR across all DNA amounts, and that the SMLR model has a call rate advantage, particularly at 62.5 and \SI{50}{\pg} DNA.
 \subfile{table1.tex}
 
 
@@ -494,11 +435,11 @@ Furthermore, even with significant differences in the nucleotide-signal distribu
 However, we do not see any alarming differences in the nucleotides' signals (see Fig.~\ref{fig:s_density}).
 
 
-Table~\ref{tab:NC_WC} shows that the SMLR and MTK models have comparable accuracies and call rates across all examined DNA quantities, with SMLR generally surpassing MTK, especially at 50 and \SI{62.5}{\pg} DNA, where its call rate was 9\% and 12\% higher.
-While the MTK model might exceed these performances if its prior genotype probabilities could be based on accurate population allele frequencies, such priors are often unavailable in forensic settings like criminal investigations or corpse identifications.
-In such cases, misspecified priors could potentially lead to decreased accuracy.
-
-Proper assessment of the MTK model in a forensic genotyping context would require an analysis of its sensitivity to the specification of the prior genotype probabilities, but this is beyond the scope of this article, where the focus is on the SMLR model. The SMLR model's independence of prior information gives it an advantage in the forensic genetic context.
+An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (\citeyear{mostad})~\cite{mostad}, which derives genotype likelihoods $P(s \mid G)$ and combines them with prior genotype probabilities $P(G)$ to compute $P(G \mid s)$ via Bayes’ theorem.
+This structure is particularly useful when allele frequency information is known and can be reliably specified, such as in population-based or familial relationship inference contexts.
+However, in forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
+The SMLR model, by contrast, estimates $P(g \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
+This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.
 
 
 Measuring the performance of the SMLR variants is not straightforward when NCs are introduced and should be judged neutrally, i.e.~from the perspective that they are meant to remove WCs, whereby NCs should not be seen as incorrect genotype predictions.
@@ -536,11 +477,15 @@ Initialisation problems can occur due to numerical overflow, e.g.~if the value o
 Such issues are of general concern for optimisation tasks and are not specific to fitting the SMLR model.\\
 
 
-Maximum likelihood estimation focuses on optimally placing the decision boundaries based on the observed data but only to classify genotypes.
-The MLEs can be said to optimise accuracy when the probability threshold, $q$, is set to zero, but when $q > \sfrac{1}{2}$, the classification process is changed in a non-trivial way.
-While the cross-validations demonstrated that the MLEs produce effective SMLR models, it may still be possible to adjust the position of the no-call zone to further improve accuracies and call rates.
-However, defining an 'optimal' position for the no-call zone is not straightforward, as it depends on its width.
-Nevertheless, research into estimation approaches that incorporate NCs or aim to optimise the position of the no-call zone rather than the decision boundaries could be valuable for forensic genotyping.\\
+Maximum likelihood estimation (MLE) focuses on optimally placing decision boundaries to classify genotypes based on the observed data.
+In this sense, MLE can be said to optimise accuracy when the probability threshold $q$ is set to zero.
+However, when $q > \sfrac{1}{2}$​, the no-call zone introduces a second decision layer that changes the classification process in a non-trivial way.
+For example, before applying a probability threshold to convert WCs into NCs, the model with $\beta_0 \neq 0$ may achieve a higher likelihood and yield fewer WCs.
+Yet once a threshold is applied, the performance metrics \eqref{eq:metric_CR} and \eqref{eq:metric_AC} may favour the simpler model with $\beta_0 = 0$.
+This occurs because MLE does not account for how the parameter estimates influence the width and shape of the no-call zone.
+
+Although the cross-validations demonstrated that MLE yields effective SMLR models, it may still be possible to improve accuracy and call rate further by considering estimation procedures that directly incorporate the no-call mechanism.
+Research into such methods---moving beyond pure classification to explicitly optimise performance in the presence of NCs---could be valuable for forensic genotyping.\\
 
 
 Genetic software like GenoGeographer~\cite{tvede18, tvede17, genogeographer} typically assumes that genotype calls are correct once they pass quality filters, overlooking the inherent uncertainty in genotyping, particularly in forensic genetics where samples of low quality and quantity are common.
