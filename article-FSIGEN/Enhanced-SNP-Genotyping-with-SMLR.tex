@@ -197,6 +197,7 @@ The call confidence increases with increasing $q$-values, corresponding to expan
 \subsubsection{Estimation}
 In multinomial logistic regression, maximum likelihood estimates~(MLEs) of parameters are well-defined and unique when the data categories overlap and thus are not completely separable~\cite{albert, lesaffre}.
 When fitting SMLR models to biallelic data, overlapping categories essentially mean that after applying the variance-stabilising transformation to the allele signals, at least one of the collections of homozygous points cannot be separated from the collection of heterozygous points by any straight line (see SMLR-plot in Fig.~\ref{fig:methods}).
+For completely separable data, the true genotypes are perfectly partitioned by the decision boundaries.
 The ratios between the parameters, and thereby the decision boundaries in~\eqref{eq:boundaries}, are still well-defined, but the likelihood function will no longer have a unique maximum, and the MLEs will tend towards infinity unless constrained by a stopping criterion~\cite[p.~298]{agresti}.
 
 The MLEs are determined by minimising the negative log-likelihood of the SMLR model derived in the Supplementary Material~\eqref{eq:loglikelihood}.
@@ -204,11 +205,11 @@ Using the R~function 'optim' with default settings facilitates this process.
 It requires an initial guess for the parameter vector, which can be set to
 \begin{align*}
 \left(\beta_0^{\text{init}}, \beta_1^{\text{init}}, \beta_2^{\text{init}}\right)
-\, &= \,
-\left(0, 1, -2\right) \\
-\text{or} \quad
+=
+\left(0, 1, -2\right)
+\ \ \text{or} \ \ 
 \left(\beta_1^{\text{init}}, \beta_2^{\text{init}}\right)
-\, &= \,
+=
 \left(1, -2\right),
 \end{align*}
 reflecting the expectations of $\beta_2 < 0 < \beta_1 < \lvert \beta_2 \rvert$.
