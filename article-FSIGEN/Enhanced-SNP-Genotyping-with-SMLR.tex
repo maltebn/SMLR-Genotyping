@@ -479,7 +479,7 @@ Such issues are of general concern for optimisation tasks and are not specific t
 
 Maximum likelihood estimation (MLE) focuses on optimally placing decision boundaries to classify genotypes based on the observed data.
 In this sense, MLE can be said to optimise accuracy when the probability threshold $q$ is set to zero.
-However, when $q > \sfrac{1}{2}$​, the no-call zone introduces a second decision layer that changes the classification process in a non-trivial way.
+However, when $q > \sfrac{1}{2}$, the no-call zone introduces a second decision layer that changes the classification process in a non-trivial way.
 For example, before applying a probability threshold to convert WCs into NCs, the model with $\beta_0 \neq 0$ may achieve a higher likelihood and yield fewer WCs.
 Yet once a threshold is applied, the performance metrics \eqref{eq:metric_CR} and \eqref{eq:metric_AC} may favour the simpler model with $\beta_0 = 0$.
 This occurs because MLE does not account for how the parameter estimates influence the width and shape of the no-call zone.
