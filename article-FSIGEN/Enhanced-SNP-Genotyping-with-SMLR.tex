@@ -435,7 +435,7 @@ Furthermore, even with significant differences in the nucleotide-signal distribu
 However, we do not see any alarming differences in the nucleotides' signals (see Fig.~\ref{fig:s_density}).
 
 
-An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (\citeyear{mostad})~\cite{mostad}, which derives genotype likelihoods $P(s \mid G)$ and combines them with prior genotype probabilities $P(G)$ to compute $P(G \mid s)$ via Bayes’ theorem.
+An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid G)$ and combines them with prior genotype probabilities $P(G)$ to compute $P(G \mid s)$ via Bayes’ theorem.
 This structure is particularly useful when allele frequency information is known and can be reliably specified, such as in population-based or familial relationship inference contexts.
 However, in forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
 The SMLR model, by contrast, estimates $P(g \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
