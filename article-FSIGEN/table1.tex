@@ -1,6 +1,6 @@
 \begin{table*}
 \centering
-\caption{The SMLR model's genotyping improvements relative to the HID SNP Genotyper Plugin (HSG).} 
+\caption{The SMLR model’s genotyping improvements for all examined DNA quantities.} 
 \label{tab:NC_WC}
 \vspace{1mm}
 \begin{adjustbox}{max width=\textwidth}
@@ -13,14 +13,8 @@
 \multicolumn{2}{l}{DNA quantity (\si{\pg})} & 1,000 & 500 & 250 & 125 & 62.5 & 31.25 & 50 & 25 & 12.5 & 6.25 \\ 
 \multicolumn{2}{l}{Observed SNPs ($s_1\!+\!s_2\!>\!0$)} & 3,240 & 3,240 & 3,240 & 3,238 & 2,585 & 1,931 & 2,831 & 2,821 & 2,575 & 2,347 \\ 
 \midrule[2pt]
-\multirow{2}{*}{HSG} & No-calls & 1 & 3 & 28 & 48 & 83 & 156 & 62 & 142 & 213 & 276 \\ 
+\multirow{2}{*}{HSG\tnote{$*$}} & No-calls & 1 & 3 & 28 & 48 & 83 & 156 & 62 & 142 & 213 & 276 \\ 
    & Wrong calls & 0 & 0 & 1 & 1 & 2 & 9 & 8 & 59 & 184 & 272 \\ 
-\midrule[1pt]
-\midrule[1pt]
-\multirow{3}{*}{MTK\tnote{$*$}}  & $q$ aligning WCs\tnote{$\dagger$} & 0 & 0 & 0 & 0.5752 & 0.9999 & 0.8803 & 0.9999 & 0.9765 & 0.8654 & 0.6666 \\ 
-\cmidrule(lr){2-12}
-   & Call rate (\%) & 100 & 100 & 100 & 99.9 & 89.1 & 96.2 & 91.2 & 96.1 & 94.8 & 91.4 \\ 
-   & No-calls & 0 & 0 & 0 & 4 & 282 & 73 & 250 & 111 & 134 & 203 \\ 
 \midrule[2pt]
 \multirow{4}{*}{SMLR\tnote{$\S$}}  & $q$ aligning WCs\tnote{$\dagger$} & 0 & 0 & 0 & 0.5740 & 0.6084 & 0.8252 & 0.7221 & 0.9109 & 0.9211 & 0.9433 \\ 
 \cmidrule(lr){2-12}
@@ -28,12 +22,6 @@
    & No-calls & 0 & 0 & 0 & 3 & 3 & 62 & 8 & 96 & 131 & 192 \\ 
 \cmidrule(lr){2-12}
    & NC-reduction (\%) & 100 & 100 & 100 & 93.8 & 96.4 & 60.3 & 87.1 & 32.4 & 38.5 & 30.4 \\ 
-\midrule[1pt]
-\midrule[1pt]
-\multirow{3}{*}{MTK\tnote{$*$}} & $q$ aligning NCs\tnote{$\ddagger$} & 0.9999 & 0.9999 & 0.9998 & 0.9988 & 0.9967 & 0.9893 & 0.9972 & 0.9851 & 0.8856 & 0.6667 \\ 
-\cmidrule(lr){2-12}
-   & Accuracy (\%) & 100 & 100 & 100 & 100 & 99.880 & 99.607 & 99.675 & 97.910 & 92.594 & 87.729 \\ 
-   & Wrong calls & 0 & 0 & 0 & 0 & 3 & 7 & 9 & 56 & 175 & 255 \\ 
 \midrule[2pt]
 \multirow{4}{*}{SMLR\tnote{$\S$}} & $q$ aligning NCs\tnote{$\ddagger$} & 0.9720 & 0.9702 & 0.9490 & 0.9490 & 0.9436 & 0.9373 & 0.9432 & 0.9490 & 0.9537 & 0.9615 \\ 
 \cmidrule(lr){2-12}
@@ -44,9 +32,9 @@
    \bottomrule[2pt]
 \end{tabular}
 \begin{tablenotes}
-\item[$*$] Model by Mostad, Tillmar, and Kling with biallelic uniform prior, $e=0.06$, and $m\approx \text{DNA quantity (pg)} \times 2/6$.
-\item[$\dagger$] The smallest $q$ that aligns the WCs according to \eqref{eq:metric_CR} for each of the two methods MTK and SMLR.
-\item[$\ddagger$] The smallest $q$ that aligns the NCs according to \eqref{eq:metric_AC} for each of the two methods MTK and SMLR.
+\item[$*$] Number of no-calls (NCs) and wrong calls (WCs) made by the HID SNP Genotyper Plugin (HSG).
+\item[$\dagger$] The smallest $q$ that aligns the SMLR model's WCs according to \eqref{eq:metric_CR}.
+\item[$\ddagger$] The smallest $q$ that aligns the SMLR model's NCs according to \eqref{eq:metric_AC}.
 \item[$\S$] Results are conservative and based on the SMLR model with an intercept fitted to square-root transformed allele signals from examinations of \SI{25}{\pg} and \SI{50}{\pg} DNA.
 \end{tablenotes}
 \end{threeparttable}
