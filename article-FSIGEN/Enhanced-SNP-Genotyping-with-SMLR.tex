@@ -317,7 +317,7 @@ Since the metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} favour the HS
 \subfile{table1.tex}
 
 
-\subsubsection*{Relevant Dilutions:}
+\subsubsection{Relevant Dilutions}
 Fig.~\ref{fig:scatterplots} shows how the distribution of $(\sqrt{s_1}, \sqrt{s_2})$ becomes more spread out and how the HSG makes more NCs and WCs as the DNA amount decreases.
 It further illustrates that most WCs at low DNA amounts are heterozygous genotypes misidentified as homozygous due to a reduced signal for one of the alleles.
 For the SMLR model, this pattern necessitates higher $q$-threshold settings for accurate genotyping, resulting in lower call rates.
@@ -343,7 +343,7 @@ The former is where the call rate of the HSG becomes critically low and it more 
 However, to assess robustness and generalisability, the SMLR models will also be fitted using data from exterior DNA quantities.
 
 
-\subsubsection*{Parameter Variance, Sample Size, and Separation:}
+\subsubsection{Parameter Variance, Sample Size, and Separation}
 Bootstrap analyses were performed for the six SMLR variants mentioned in the Material and Methods section.
 They all showed similar results to those depicted in Supplementary Fig.~\ref{fig:bootstrap}.
 Here we see a flatter decline in the parameters’ variances after a sample size of around nine individuals or roughly 1,460~SNPs.
@@ -354,7 +354,7 @@ It also shows that complete separation can be avoided by including examinations 
 
 
 \subsection{Validation of the SMLR Model}
-\subsubsection*{Cross-Validation Insights:}
+\subsubsection{Cross-Validation Insights}
 The cross-validation experiments in Supplementary Fig.~\ref{fig:cv} demonstrate that the strong results from Table~\ref{tab:NC_WC} were not coincidental.
 The figure shows that when either the square root or logarithmic transformation is applied to the allele signals, the SMLR model generally outperforms the HSG with substantial reductions in NCs and WCs, improving both call rate and accuracy.
 
@@ -387,7 +387,7 @@ Note that the two plots use different axes scales, and that the first axes have 
 \end{figure*}
 
 
-\subsubsection*{Call Rate and Accuracy Dependencies:}
+\subsubsection{Call Rate and Accuracy Dependencies}
 The accuracy of the SMLR model depends on the call rate through the width of the no-call zone, which is controlled by the value of the probability threshold $q$.
 This dependency on $q$ is depicted in Fig.~\ref{fig:accr_vs_q_low}, where the previously selected SMLR model is applied to the range of low DNA quantities.
 The left plot shows that the SMLR model surpasses the HSG's median accuracy of 99.567\% at a probability threshold of $q=0.74$.
@@ -412,7 +412,7 @@ The shaded horizontal bars represent the accuracy~(left) and call rate~(right) r
 \end{figure*}
 
 
-\subsubsection*{SMLR for Quality Checks:}
+\subsubsection{SMLR for Quality Checks}
 The locus rs7722456 had many reads of an unexpected nucleotide (adenine) for all examinations in the first dilution series.
 The HSG's quality control flagged only 37 of the 108 unusual observations with its QC flag for allelic imbalance.
 The limited efficiency in identifying allele balance issues was consistent for all DNA quantities examined in this dilution series.
@@ -438,7 +438,7 @@ However, we do not see any alarming differences in the nucleotides' signals (see
 
 An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid G)$ and combines them with prior genotype probabilities $P(G)$ to compute $P(G \mid s)$ via Bayes’ theorem.
 This structure is particularly useful when allele frequency information is known and can be reliably specified, such as in population-based or familial relationship inference contexts.
-However, in forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
+However, in many forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
 The SMLR model, by contrast, estimates $P(G \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
 This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.
 
