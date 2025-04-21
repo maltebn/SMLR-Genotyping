@@ -1131,8 +1131,8 @@ For the few non-exact cases, it is also shown that the difference in aligned no-
 This implies that the proportionality is then approximate.
 ```{r}
 m <- c("sqrt_NI-C", "sqrt-C", "log_NI-C", "log-C", "I_NI-C", "I-C")
-ff <- c("NI", "", "log_NI", "log_", "I_NI", "I_")
-datafile_name <- paste0("00_obj_crossval_C_", ff, "1K_9pers_",
+ff <- c("sqrt_NI_", "sqrt_", "log_NI_", "log_", "I_NI_", "I_")
+datafile_name <- paste0("01_obj_crossval_", ff, "1K_9individuals_",
                         rep(c("low", "high"), each=length(ff)), ".rds")
 
 # Difference in NCs when SMLR's NCs are aligned to those of the HSG
@@ -1161,7 +1161,7 @@ NC_diff_smlr_hsg <- lapply(datafile_name, function(x) {
       })
     })
 })
-names(NC_diff_smlr_hsg) <- gsub("1K_9pers|\\.rds", "", str_sub(datafile_name, 19))
+names(NC_diff_smlr_hsg) <- gsub("1K_9individuals|\\.rds", "", str_sub(datafile_name, 19))
 names(NC_diff_smlr_hsg) <- sub("__", "_", names(NC_diff_smlr_hsg))
 
 lapply(NC_diff_smlr_hsg, function(cval) {
