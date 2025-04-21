@@ -403,10 +403,10 @@ This demonstrates its capability to maintain high performance across varying DNA
 \includegraphics[width=\textwidth]{FIG_4-two-column.jpeg}
 \caption{
 Performance of the SMLR model across probability thresholds, $q$ (legend applies to both plots).\\
-The grey lines depict the model's performance in each of 1,000 cross-validation iterations.
-The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the left plot.
-The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin.
+The grey lines depict the SMLR model's performance in each of 1,000 cross-validation iterations.
+The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the plots.
 Dotted lines mark the 25th and 75th percentiles among the 1,000 cross-validations, while dashed lines indicate medians.
+The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin.
 }
 \label{fig:accr_vs_q_low}
 \end{figure*}
@@ -439,7 +439,7 @@ However, we do not see any alarming differences in the nucleotides' signals (see
 An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid G)$ and combines them with prior genotype probabilities $P(G)$ to compute $P(G \mid s)$ via Bayes’ theorem.
 This structure is particularly useful when allele frequency information is known and can be reliably specified, such as in population-based or familial relationship inference contexts.
 However, in forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
-The SMLR model, by contrast, estimates $P(g \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
+The SMLR model, by contrast, estimates $P(G \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
 This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.
 
 
