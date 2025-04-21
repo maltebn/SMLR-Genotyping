@@ -104,12 +104,12 @@ Symmetric multinomial logistic regression \sep Forensic genetics \sep Low DNA co
 %% main text
 \section{Introduction}
 In forensic genotyping, the accurate calling of Single Nucleotide Polymorphisms~(SNPs) is crucial but becomes a challenge when dealing with low amounts of DNA, which is typical for biological traces.
-While amplification-based genotyping tools, such as the HID SNP Genotyper Plugin (HSG) from Thermo Fisher Scientific (Waltham, MA, USA), excel with sufficient DNA amounts, their performance declines with lower DNA quantities, resulting in increased erroneous genotype calls and reduced call rates\cite{alasfi, mostad, butler, swgdam}.
+While amplification-based genotyping tools, such as the HID SNP Genotyper Plugin (HSG) from Thermo Fisher Scientific (Waltham, MA, USA), excel with sufficient amounts of DNA, their performance declines with lower DNA quantities, resulting in increased erroneous genotype calls and reduced call rates~\cite{alasfi, mostad, butler, swgdam}.
 
 To reduce the number of wrong calls~(WCs), it seems natural to declare a no-call~(NC) for genotypes not passing the quality checks~(QCs) provided by the HSG.
 However, for low amounts of input DNA, this approach significantly decreases the call rate and still struggles to filter out WCs.
 
-Other probabilistic approaches have been proposed to handle uncertainty in low-coverage sequencing~\cite{mostad}, but they either integrate genotype likelihoods directly into downstream computations or rely on prior information about the genotypes, such as population allele frequencies, and some are restricted to integer-based allele count data.
+Other probabilistic approaches have been proposed to handle uncertainty in low-coverage sequencing~\cite{mostad}, but they either integrate genotype likelihoods directly into downstream computations or rely on prior information about the genotypes, such as population allele frequencies, and some are limited to integer-valued data such as allele reads or counts.
 
 We introduce a Symmetric Multinomial Logistic Regression (SMLR) model and a framework for refined NC declaration that improves genotyping accuracy and call rate, especially in challenging conditions.
 The SMLR model does not rely on prior genotype probabilities and handles both integer and continuous allele signals.
@@ -132,7 +132,7 @@ A dot represents a set of read counts $(s_1, s_2)$ for an SNP.
 It is coloured by the true genotype: red for heterozygous and blue or yellow for homozygous.
 Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls.
 In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance.
-In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (an arbitrary value for illustrative purpose).
+In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (a value chosen for illustrative purpose).
 Outside the grey area, the predicted genotype has $P(G \mid s_1, s_2) \geq q$.
 }
 \label{fig:methods}
@@ -153,7 +153,7 @@ Therefore, Enforcing the Quality Checks~(EQC) by turning genotypes with QC flags
 \subsection{The Symmetric Multinomial Logistic Regression (SMLR) Model}
 \subsubsection{Model Formulation}
 The SMLR model presents a statistical solution to biallelic genotyping challenges by using the allele signals to estimate conditional genotype probabilities.
-For a biallelic marker with alleles $a_1$ and $a_2$ having measured signals $s_1$ and $s_2$, we consider the unphased genotype $G$ with outcomes $\{a_1a_1, a_1a_2, a_2a_2\}$ and the conditional genotype probabilities $p_{ij} = P\left(G = a_i a_j \mid s1, s2 \right)$.
+For a biallelic marker with alleles $a_1$ and $a_2$ having measured signals $s_1$ and $s_2$, we consider the unphased genotype $G$ with outcomes $\{a_1a_1, a_1a_2, a_2a_2\}$ and the conditional genotype probabilities $p_{ij} = P\left(G = a_i a_j \mid s_1, s_2 \right)$.
 Multinomial logistic regression is apt for modelling the conditional distribution of $G$ given $s_1$ and $s_2$ with the heterozygous genotype as a baseline category for convenience and standardisation~\cite[p.~293]{agresti}.
 However, it is desirable to model $P(G \mid s_1, s_2)$ in a way that is invariant to the labelling of the alleles by introducing a symmetry into the model equations, leading to the SMLR model:
 \begin{align}\label{eq:smlr}
@@ -163,8 +163,8 @@ However, it is desirable to model $P(G \mid s_1, s_2)$ in a way that is invarian
 \end{split}
 \end{align}
 Here, the function $f$ is a variance-stabilising transformation of the allele signals, e.g.~$f(s_i) = \sqrt{s_i}$.
-In standard multinomial logistic regression, the second equation would have different $\beta_i$-parameters than the first, and the resulting parameter estimates would depend on which of the two alleles is labelled $a_1$ or $a_2$.
-The introduction of the above symmetry ensures that it does not matter which of the two alleles is labelled $a_1$ or $a_2$.
+In standard multinomial logistic regression, the second equation would have different $\beta_i$-parameters than the first, and the resulting parameter estimates would depend on which allele is labelled $a_1$ or $a_2$.
+The introduced symmetry eliminates this dependency and ensures that the model's behaviour is invariant to allele labelling.
 The conditional genotype probabilities become
 \begin{align}\label{eq:posterior}
 \begin{split}
