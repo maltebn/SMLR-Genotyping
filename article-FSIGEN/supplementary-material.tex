@@ -52,19 +52,19 @@ Likewise, the call rate of the SMLR model is compared against the HSG by setting
 
 \subsubsection*{Call Rates and No-Calls}
 The proportionality at \eqref{eq:metric_CR} follows from the definitions of $CR_{\text{HSG}}$ and $CR_{\text{SMLR}}$:
-\begin{align*}
+\begin{align}
 \frac{CR_{\text{SMLR}\mid\text{HSG}} - CR_{\text{HSG}}}{CR_{\text{HSG}}}
 \ &= \ 
-\frac{\frac{TC - NC_{\text{SMLR}\mid\text{HSG}}}{TC} \times 100 - \frac{TC - NC_{\text{HSG}}}{TC} \times 100}{\frac{TC - NC_{\text{HSG}}}{TC} \times 100} \\
+\frac{\frac{TC - NC_{\text{SMLR}\mid\text{HSG}}}{TC} \times 100 - \frac{TC - NC_{\text{HSG}}}{TC} \times 100}{\frac{TC - NC_{\text{HSG}}}{TC} \times 100} \nonumber\\
 &= \ 
-\frac{TC - NC_{\text{SMLR}\mid\text{HSG}} - TC + NC_{\text{HSG}}}{TC - NC_{\text{HSG}}} \\
+\frac{TC - NC_{\text{SMLR}\mid\text{HSG}} - TC + NC_{\text{HSG}}}{TC - NC_{\text{HSG}}} \nonumber\\
 &= \ 
-\frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{TC - NC_{\text{HSG}}} \\
+\frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{TC - NC_{\text{HSG}}} \nonumber\\
 &= \ 
-\frac{NC_{\text{HSG}}}{TC - NC_{\text{HSG}}} \times \frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{NC_{\text{HSG}}} \\
+\frac{NC_{\text{HSG}}}{TC - NC_{\text{HSG}}} \times \frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{NC_{\text{HSG}}} \nonumber\\
 \; &\propto \; 
-\frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{NC_{\text{HSG}}}
-\end{align*}
+\frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{NC_{\text{HSG}}}\label{eq:prop_CR}
+\end{align}
 
 \subsubsection*{Accuracies and Wrong Calls}
 Rigorous proportionality at \eqref{eq:metric_AC} follows when $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$.
@@ -83,15 +83,15 @@ As shown below, this gives an approximate proportionality for the cases where $N
 \frac{WC_{\text{HSG}} - \frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} WC_{\text{SMLR}\mid\text{HSG}}}{TC - NC_{\text{HSG}} - WC_{\text{HSG}}}.
 \end{align*}
 When $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$ it follows that $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} = 1$ and exact proportionality is obtained:
-\begin{align*}
+\begin{align}
 \frac{AC_{\text{SMLR}\mid\text{HSG}} - AC_{\text{HSG}}}{AC_{\text{HSG}}}
 \ &= \ 
-\frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{TC - NC_{\text{HSG}} - WC_{\text{HSG}}} \\
+\frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{TC - NC_{\text{HSG}} - WC_{\text{HSG}}} \nonumber\\
 \ &= \ 
-\frac{WC_{\text{HSG}}}{TC - NC_{\text{HSG}} - WC_{\text{HSG}}} \times \frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{WC_{\text{HSG}}} \\
+\frac{WC_{\text{HSG}}}{TC - NC_{\text{HSG}} - WC_{\text{HSG}}} \times \frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{WC_{\text{HSG}}} \nonumber\\
 \; &\propto \; 
-\frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{WC_{\text{HSG}}}.
-\end{align*}
+\frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{WC_{\text{HSG}}}.\label{eq:prop_AC}
+\end{align}
 When $NC_{\text{SMLR}}(q_{NC}) > NC_{\text{HSG}}$, approximate proportionality is obtained when $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} \approx 1$, and as Table~\ref{tab:AC_prop} shows, this was always the case for the cross-validations in Fig.~\ref{fig:cv}.
 
 \begin{table*}
