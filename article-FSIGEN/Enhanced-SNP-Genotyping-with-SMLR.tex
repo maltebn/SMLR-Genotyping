@@ -200,8 +200,8 @@ When fitting SMLR models to biallelic data, overlapping categories essentially m
 For completely separable data, the true genotypes are perfectly partitioned by the decision boundaries.
 The ratios between the parameters, and thereby the decision boundaries in~\eqref{eq:boundaries}, are still well-defined, but the likelihood function will no longer have a unique maximum, and the MLEs will tend towards infinity unless constrained by a stopping criterion~\cite[p.~298]{agresti}.
 
-The MLEs are determined by minimising the negative log-likelihood of the SMLR model derived in the Supplementary Material~\eqref{eq:loglikelihood}.
-Using the R~function 'optim' with default settings facilitates this process.
+The MLEs are determined by minimising the negative log-likelihood of the SMLR model, as derived in the Supplementary Material~\eqref{eq:loglikelihood}.
+Using the R~function 'optim' with the default Nelder-Mead method facilitates this process.
 It requires an initial guess for the parameter vector, which can be set to
 \begin{align*}
 \left(\beta_0^{\text{init}}, \beta_1^{\text{init}}, \beta_2^{\text{init}}\right)
@@ -219,7 +219,7 @@ Therefore, the initial guess can take values beyond these expectations, such as 
 
 \subsection{Assessing the Minimal Sample Size}
 Bootstrap analysis was applied to determine a reasonable sample size for fitting the SMLR model.
-By observing how the variance of parameter estimates decreases with increasing sample size, we identified the optimal number of SNP observations or individuals needed to achieve significant precision gains without excessive data collection~\cite{efron}.
+By observing how the variance of parameter estimates decreases with increasing sample size, we estimated a point beyond which additional SNP observations or individuals would yield limited precision gains relative to the cost of further data collection~\cite{efron}.
 
 The bootstrap analysis also demonstrates the stability of the SMLR model's decision boundaries in scenarios of complete separation, which often occurs with smaller sample sizes, and it illustrates under which conditions complete separation is less likely.
 
@@ -245,7 +245,7 @@ In general, the relative difference in call rates is proportional to the relativ
 \frac{AC_{\text{SMLR}\mid\text{HSG}} - AC_{\text{HSG}}}{AC_{\text{HSG}}} \; &\propto \; \frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{WC_{\text{HSG}}}.\label{eq:metric_AC}
 \end{align}
 Here, $NC_{\text{HSG}}$ and $WC_{\text{HSG}}$ are the no-calls and wrong calls of the HSG, while $NC_{\text{SMLR}\mid\text{HSG}}$ and $WC_{\text{SMLR}\mid\text{HSG}}$ are the corresponding counts for the SMLR model when its WCs and NCs are aligned to those of the HSG, respectively.
-The proportionalities~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} are derived in the supplementary material.
+The proportionalities~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} are derived in the supplementary material at~\eqref{eq:prop_CR} and~\eqref{eq:prop_AC}.
 
 For signals exhibiting variation consistent with a Poisson distribution, commonly observed for integer-valued data, the transformation $f(x) = \sqrt{x}$ is well established as an effective method for stabilising variance~\cite{bartlett}.
 However, even a theoretically well-justified choice of $f$ will not necessarily optimise the performance metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC}.
@@ -263,7 +263,7 @@ This structured approach enables comparing the models in an objective setting an
 
 
 \subsection{Software}
-For the analyses, we used R version 4.4.2 with the packages: 'tidyverse', 'future.apply', and 'xtable'~\cite{r, tidyverse1, tidyverse2, future1, future2, futureapply, xtable}.
+For the analyses, we used R version 4.5.0 with the packages: 'tidyverse', 'future.apply', and 'xtable'~\cite{r, tidyverse1, tidyverse2, future1, future2, futureapply, xtable}.
 For creating figures, we used ImageMagick and the R packages: 'ggplot2', 'ggnewscale', 'latex2exp', and 'patchwork'~\cite{imagemagick, ggplot, ggnewscale, latex2exp, patchwork}.
 The R scripts used for data analyses and figure generation are available on GitHub and Zenodo~\cite{scripts}.
 
