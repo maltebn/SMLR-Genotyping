@@ -51,7 +51,7 @@ In order to compare the accuracy of the SMLR model against the HSG, the $q$-thre
 Likewise, the call rate of the SMLR model is compared against the HSG by setting the $q$-threshold at the minimal value, $q_{WC}$, such that $WC_{\text{SMLR}}(q_{WC}) \geq WC_{\text{HSG}}$, and the resulting number of no-calls, $NC_{\text{SMLR}}(q_{WC}) = NC_{\text{SMLR}\mid\text{HSG}}$, is used to compute the call rate for the SMLR model.
 
 \subsubsection*{Call Rates and No-Calls}
-The proportionality at \eqref{eq:metric_CR} follows from the definitions of $CR_{\text{HSG}}$ and $CR_{\text{SMLR}}$:
+The proportionality at \eqref{eq:metric_CR} follows from the definitions of $CR_{\text{HSG}}$ and $CR_{\text{SMLR}\mid\text{HSG}}$:
 \begin{align}
 \frac{CR_{\text{SMLR}\mid\text{HSG}} - CR_{\text{HSG}}}{CR_{\text{HSG}}}
 \ &= \ 
@@ -67,10 +67,7 @@ The proportionality at \eqref{eq:metric_CR} follows from the definitions of $CR_
 \end{align}
 
 \subsubsection*{Accuracies and Wrong Calls}
-Rigorous proportionality at \eqref{eq:metric_AC} follows when $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$.
-Such exact alignment of no-calls was obtained in more than 77\% of the cases when considering all of the data splits and models from the cross-validations in Fig.~\ref{fig:cv}.
-After no-call alignment, the highest value of $NC_{\text{SMLR}}(q_{NC}) - NC_{\text{HSG}}$ was observed to be 12 in a test dataset with 2,720 observations.
-As shown below, this gives an approximate proportionality for the cases where $NC_{\text{SMLR}}(q_{NC}) > NC_{\text{HSG}}$:
+Rigorous proportionality at \eqref{eq:metric_AC} is obtained when $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$:
 \begin{align*}
 \frac{AC_{\text{SMLR}\mid\text{HSG}} - AC_{\text{HSG}}}{AC_{\text{HSG}}}
 \ &= \ 
@@ -82,7 +79,7 @@ As shown below, this gives an approximate proportionality for the cases where $N
 \ &= \ 
 \frac{WC_{\text{HSG}} - \frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} WC_{\text{SMLR}\mid\text{HSG}}}{TC - NC_{\text{HSG}} - WC_{\text{HSG}}}.
 \end{align*}
-When $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$ it follows that $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} = 1$ and exact proportionality is obtained:
+When $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$ it follows that $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} = 1$ and the proportionality becomes exact:
 \begin{align}
 \frac{AC_{\text{SMLR}\mid\text{HSG}} - AC_{\text{HSG}}}{AC_{\text{HSG}}}
 \ &= \ 
@@ -92,7 +89,8 @@ When $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$ it follows that $\frac{TC - NC
 \; &\propto \; 
 \frac{WC_{\text{HSG}} - WC_{\text{SMLR}\mid\text{HSG}}}{WC_{\text{HSG}}}.\label{eq:prop_AC}
 \end{align}
-When $NC_{\text{SMLR}}(q_{NC}) > NC_{\text{HSG}}$, approximate proportionality is obtained when $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})} \approx 1$, and as Table~\ref{tab:AC_prop} shows, this was always the case for the cross-validations in Fig.~\ref{fig:cv}.
+As seen in Table~\ref{tab:AC_prop}, exact alignment of no-calls was obtained in more than 77\% of the cases when considering all of the data splits and models from the cross-validations in Fig.~\ref{fig:cv}.
+For the remaining cases, the quotient $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})}$ was always close to one, yielding an approximate proportionality.
 
 \begin{table*}
 \centering
@@ -101,10 +99,10 @@ The percentiles at which the third decimal of the quotient $\left(TC - NC_{\text
 }
 \label{tab:AC_prop}
 \vspace{1mm}
-\begin{tabular}{l*{9}{c}}
-Percentile             & 77.63\% & 87.82\% & 95.14\% & 98.50\% & 99.63\% & 99.96\% & 99.998\% \\
+\begin{tabular}{l*{10}{c}}
+Percentile             & 77.63\% & 87.82\% & 95.14\% & 98.50\% & 99.63\% & 99.96\% & 99.998\% & 100\% \\
 \hline
-$\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})}$ & 1 & 1.001 & 1.002 & 1.003 & 1.004 & 1.005 & 1.006 \\
+$\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})}$ & 1 & 1.0011 & 1.0021 & 1.0031 & 1.0041 & 1.0050 & 1.0061 & 1.0066 \\
 \end{tabular}
 \end{table*}
 
@@ -113,7 +111,7 @@ $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})}$ & 1 & 1.001 & 1.002
 \subsection*{The Negative Log-Likelihood Function}
 Let $\mathcal{I}_{11}$ and $\mathcal{I}_{22}$ be index sets for the observations with homozygous genotypes in allele $a_1$ and $a_2$, respectively, and let $\mathcal{I}_{12}$ be the index set for the observations with heterozygous genotypes.
 Let $m \in \mathcal{I} = \mathcal{I}_{11}\cup\mathcal{I}_{22}\cup\mathcal{I}_{12}$ be a general index and define $t_m = (1, f(s_1^m), f(s_2^m))$, where $s_1^m$ and $s_2^m$ denote the allele signals for $a_1$ and $a_2$ of the observation with index $m$.
-In accordance with the notation used in~\eqref{eq:posterior}, let $p_{11}^i$, $p_{22}^j$, and $p_{12}^k$ be the posterior genotype probabilities of the observations with indices $i \in \mathcal{I}_{11}$, $j \in \mathcal{I}_{22}$, and $k \in \mathcal{I}_{12}$, respectively.
+In accordance with the notation used in~\eqref{eq:posterior}, let $p_{11}^i$, $p_{22}^j$, and $p_{12}^k$ be the conditional genotype probabilities of the observations with indices $i \in \mathcal{I}_{11}$, $j \in \mathcal{I}_{22}$, and $k \in \mathcal{I}_{12}$, respectively.
 To ease the notation further, define $\beta = (\beta_0,\beta_1,\beta_2)$ and $\tilde\beta = (\beta_0,\beta_2,\beta_1)$.
 The likelihood for $\beta$ is
 \begin{align*}
@@ -219,7 +217,7 @@ The SMLR framework used for quality check of the allele balance or spotting of r
 The scatterplots show the major allele signal versus the adenine signal of the SNP locus rs7722456 for the DNA quantities examined in the first dilution series.
 The SMLR model (solid lines) was fitted with an intercept to square-root transformed allele signals from the examinations of \SI{25}{\pg} and \SI{50}{\pg} DNA from the second dilution series.
 Observations flagged by the HID SNP Genotyper Plugin for allelic imbalance concerns (MAF-flag) are marked with red crosses.
-The grey areas show where the posterior genotype probabilities of the SMLR model fall below a threshold value of $q=0.99$, highlighting potential quality issues with the enclosed points.
+The grey areas show where the conditional genotype probabilities of the SMLR model fall below a threshold value of $q=0.99$, highlighting potential quality issues with the enclosed points.
 }
 \label{fig:rare}
 \end{figure*}
