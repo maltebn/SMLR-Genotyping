@@ -433,14 +433,14 @@ Some immediate benefits of this simplicity are increased robustness and a straig
 Conversely, for a non-symmetric model, changing the labels for a subset of the alleles will alter the parameter estimates, making the model less robust.
 Non-symmetric decision boundaries may also make some nucleotides more prone than others to be declared NCs, creating an NC bias.
 Furthermore, even with significant differences in the nucleotide-signal distributions (such that certain allele labellings make more sense than others), it is still likely that the SMLR model's equal treatment of alleles will yield higher accuracy compared to a non-symmetric model due to the bias-variance trade-off~\cite{shmueli}.
-However, we do not see any alarming differences in the nucleotides' signals (see Fig.~\ref{fig:s_density}).
+However, we do not see any alarming differences in the nucleotides' signals (see Fig.~\ref{fig:s_density}).\\
 
 
-An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid G)$ and combines them with prior genotype probabilities $P(G)$ to compute $P(G \mid s)$ via Bayes’ theorem.
+An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid g)$ and combines them with prior genotype probabilities $P(g)$ to compute $P(g \mid s)$ via Bayes’ theorem.
 This structure is particularly useful when allele frequency information is known and can be reliably specified, such as in population-based or familial relationship inference contexts.
 However, in many forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
-The SMLR model, by contrast, estimates $P(G \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
-This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.
+The SMLR model, by contrast, estimates $P(g \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
+This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.\\
 
 
 Measuring the performance of the SMLR variants is not straightforward when NCs are introduced and should be judged neutrally, i.e.~from the perspective that they are meant to remove WCs, whereby NCs should not be seen as incorrect genotype predictions.
