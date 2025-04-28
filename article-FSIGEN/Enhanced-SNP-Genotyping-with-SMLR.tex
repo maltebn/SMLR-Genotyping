@@ -15,7 +15,7 @@
 % Higher penalty for linebreaking in inline math (default is \relpenalty=500 and \binoppenalty=700):
 \relpenalty=9999
 \binoppenalty=9999
-% Redefining figure naming (to be redefined again in Supplementary Material)
+% Redefining figure naming (to be redefined again in Supplementary material)
 \renewcommand{\figurename}{Fig.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,7 +200,7 @@ When fitting SMLR models to biallelic data, overlapping categories essentially m
 For completely separable data, the true genotypes are perfectly partitioned by the decision boundaries.
 The ratios between the parameters, and thereby the decision boundaries in~\eqref{eq:boundaries}, are still well-defined, but the likelihood function will no longer have a unique maximum, and the MLEs will tend towards infinity unless constrained by a stopping criterion~\cite[p.~298]{agresti}.
 
-The MLEs are determined by minimising the negative log-likelihood of the SMLR model, as derived in the Supplementary Material~\eqref{eq:loglikelihood}.
+The MLEs are determined by minimising the negative log-likelihood of the SMLR model, as derived in the supplementary material~\eqref{eq:loglikelihood}.
 Using the R~function 'optim' with the default Nelder-Mead method facilitates this process.
 It requires an initial guess for the parameter vector, which can be set to
 \begin{align*}
@@ -344,7 +344,7 @@ However, to assess robustness and generalisability, the SMLR models will also be
 
 
 \subsubsection{Parameter variance, sample size, and separation}
-Bootstrap analyses were performed for the six SMLR variants mentioned in the Material and Methods section.
+Bootstrap analyses were performed for the six SMLR variants mentioned in the Materials and methods section.
 They all showed similar results to those depicted in Supplementary Fig.~\ref{fig:bootstrap}.
 Here we see a flatter decline in the parameters’ variances after a sample size of around nine individuals or roughly 1,460~SNPs.
 This sample size provides a good balance between the proportions of data used for fitting and testing in the cross-validation, especially in the least populated examination (\SI{31.25}{\pg} DNA), where the use of nine individuals for fitting corresponds to 75\% of the data.
@@ -530,7 +530,7 @@ We thank Martin Jensen, Sidsel Raaby, and Hai Trieu Nguyen for laboratory assist
 
 
 
-%% Supplementary Material
+%% Supplementary material
 %% Note: the supplementary material and the main article should probably be uploaded as two separate files at most publishers.
 %% In that case, the code below should be cut out and pasted into a new TeX-document, and the references in the main article to
 %% the figures, tables, equations etc. in the supplementary material should be typed manually.
