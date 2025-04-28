@@ -112,7 +112,7 @@ However, for low amounts of input DNA, this approach significantly decreases the
 Other probabilistic approaches have been proposed to handle uncertainty in low-coverage sequencing~\cite{mostad}, but they either integrate genotype likelihoods directly into downstream computations or rely on prior information about the genotypes, such as population allele frequencies, and some are limited to integer-valued data such as allele reads or counts.
 
 We introduce a Symmetric Multinomial Logistic Regression (SMLR) model and a framework for refined NC declaration that improves genotyping accuracy and call rate, especially in challenging conditions.
-The SMLR model does not rely on prior genotype probabilities and handles both integer and continuous allele signals.
+The SMLR model does not rely on prior genotype probabilities and handles integer and continuous allele signals.
 Its symmetric formulation ensures it remains indifferent to the order of the allele signals, making the SMLR model robust and straightforward in its assumptions.
 
 We explore the SMLR model's efficiency and reliability, laying out guidelines for its application in forensic SNP genotyping.
@@ -403,7 +403,7 @@ This demonstrates its capability to maintain high performance across varying DNA
 \includegraphics[width=\textwidth]{FIG_4-two-column.jpeg}
 \caption{
 Performance of the SMLR model across probability thresholds, $q$ (legend applies to both plots).\\
-The grey lines depict the SMLR model's performance in each of 1,000 cross-validation iterations.
+The grey lines depict the SMLR model's performance in 1,000 cross-validation iterations.
 The model was fitted with an intercept to square-root transformed allele signals and tested on data from the examinations of the DNA quantities indicated above the plots.
 Dotted lines mark the 25th and 75th percentiles among the 1,000 cross-validations, while dashed lines indicate medians.
 The shaded horizontal bars represent the accuracy~(left) and call rate~(right) ranges for the HID SNP Genotyper Plugin.
@@ -437,8 +437,8 @@ However, we do not see any alarming differences in the nucleotides' signals (see
 
 
 An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid g)$ and combines them with prior genotype probabilities $P(g)$ to compute $P(g \mid s)$ via Bayes’ theorem.
-This structure is particularly useful when allele frequency information is known and can be reliably specified, such as in population-based or familial relationship inference contexts.
-However, in many forensic genotyping scenarios---such as criminal investigations or unidentified remains---prior information is often unavailable.
+This structure is particularly useful when allele frequency information is known and reliably specified, such as in population-based or familial relationship inference contexts.
+However, prior information is often unavailable in many forensic genotyping scenarios, such as criminal investigations or unidentified remains.
 The SMLR model, by contrast, estimates $P(g \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
 This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.\\
 
@@ -478,9 +478,9 @@ Initialisation problems can occur due to numerical overflow, e.g.~if the value o
 Such issues are of general concern for optimisation tasks and are not specific to fitting the SMLR model.\\
 
 
-Maximum likelihood estimation (MLE) focuses on optimally placing decision boundaries to classify genotypes based on the observed data.
-In this sense, MLE can be said to optimise accuracy when the probability threshold $q$ is set to zero.
-However, when $q > \sfrac{1}{2}$, the no-call zone introduces a second decision layer that changes the classification process in a non-trivial way.
+Maximum likelihood estimation (MLE) focuses on optimally placing the decision boundaries to classify genotypes based on the observed data.
+In this sense, MLE can be said to optimise accuracy when the probability threshold $q$ is zero.
+However, the introduction of a no-call zone creates a second decision layer that alters the classification process in a non-trivial way.
 For example, before applying a probability threshold to convert WCs into NCs, the model with $\beta_0 \neq 0$ may achieve a higher likelihood and yield fewer WCs.
 Yet once a threshold is applied, the performance metrics \eqref{eq:metric_CR} and \eqref{eq:metric_AC} may favour the simpler model with $\beta_0 = 0$.
 This occurs because MLE does not account for how the parameter estimates influence the width and shape of the no-call zone.
