@@ -29,7 +29,7 @@
 
 %% Title, authors and addresses
 
-\title{Enhanced SNP Genotyping with Symmetric Multinomial Logistic Regression}
+\title{Enhanced SNP genotyping with symmetric multinomial logistic regression}
 
 
 \author[AAU]{Malte B. Nielsen\corref{cor1}}
@@ -70,7 +70,7 @@ Similarly, SMLR reduced the rate of wrong calls by 55.6\% while maintaining the 
 The no-call and wrong-call rates were significantly reduced at \SIrange[range-units = single, range-phrase = --]{62.5}{250}{\pg} DNA.
 The results highlight the SMLR model's utility in optimising SNP genotyping at suboptimal DNA concentrations, making it a valuable tool for forensic applications where sample quantity and quality may be decreased.
 This work reinforces the feasibility of statistical approaches in forensic genotyping and provides a framework for implementing the SMLR method in practical forensic settings.
-The SMLR model applies for genotyping biallelic data with a signal (e.g.~reads, counts, or intensity) for each allele.
+The SMLR model applies to genotyping biallelic data with a signal (e.g.~reads, counts, or intensity) for each allele.
 The model can also improve the allele balance quality check.
 \end{abstract}
 
@@ -120,7 +120,7 @@ We also demonstrate the SMLR model's potential in quality control, particularly 
 
 
 
-\section{Material and Methods}
+\section{Materials and methods}
 \begin{figure*}
 \centering
 \includegraphics[width=\textwidth]{FIG_1-two-column.jpeg}
@@ -150,8 +150,8 @@ As seen in the leftmost and middle plots of Fig.~\ref{fig:methods}, the HSG's ge
 Therefore, Enforcing the Quality Checks~(EQC) by turning genotypes with QC flags into NCs will increase the number of NCs and thus reduce the call rate.
 
 
-\subsection{The Symmetric Multinomial Logistic Regression (SMLR) Model}
-\subsubsection{Model Formulation}
+\subsection{The symmetric multinomial logistic regression model}
+\subsubsection{Model formulation}
 The SMLR model presents a statistical solution to biallelic genotyping challenges by using the allele signals to estimate conditional genotype probabilities.
 For a biallelic marker with alleles $a_1$ and $a_2$ having measured signals $s_1$ and $s_2$, we consider the unphased genotype $G$ with outcomes $\{a_1a_1, a_1a_2, a_2a_2\}$ and the conditional genotype probabilities $p_{ij} = P\left(G = a_i a_j \mid s_1, s_2 \right)$.
 Multinomial logistic regression is apt for modelling the conditional distribution of $G$ given $s_1$ and $s_2$ with the heterozygous genotype as a baseline category for convenience and standardisation~\cite[p.~293]{agresti}.
@@ -177,7 +177,7 @@ where $\beta_1$ is expected to be positive, such that $p_{11}$ increases with $s
 It is expected that $\beta_1 < \lvert \beta_2 \rvert$ such that $p_{12}$ goes towards $1$ as $s_1 = s_2$ grows large, aligning with the behaviour of heterozygous genotypes at high signal levels.
 
 
-\subsubsection{SNP Genotype Calling}
+\subsubsection{SNP genotype calling}
 With the SMLR model, the genotype calling for an observation is straightforward: the genotype to be called is that associated with the highest conditional probability estimated from \eqref{eq:posterior}.
 The decision boundaries are the points $(s_1, s_2)$ where at least one of the model equations from \eqref{eq:smlr} equals zero.
 In other words, where the conditional probability of the heterozygous genotype equals the conditional probability of one of the homozygous genotypes.
@@ -217,14 +217,14 @@ These are merely expectations of the resulting parameters, not requirements or c
 Therefore, the initial guess can take values beyond these expectations, such as $(0, 0, -1)$.
 
 
-\subsection{Assessing the Minimal Sample Size}
+\subsection{Assessing the minimal sample size}
 Bootstrap analysis was applied to determine a reasonable sample size for fitting the SMLR model.
 By observing how the variance of parameter estimates decreases with increasing sample size, we estimated a point beyond which additional SNP observations or individuals would yield limited precision gains relative to the cost of further data collection~\cite{efron}.
 
 The bootstrap analysis also demonstrates the stability of the SMLR model's decision boundaries in scenarios of complete separation, which often occurs with smaller sample sizes, and it illustrates under which conditions complete separation is less likely.
 
 
-\subsection{Assessing the Effectiveness of the SMLR Model}
+\subsection{Assessing the effectiveness of the SMLR model}
 The SMLR model is primarily designed as a predictive tool for classification, focusing on the practical application in forensic genotyping rather than theoretical explanatory power~\cite{shmueli}.
 As such, the evaluation metrics relevant for this study are call rate~($CR$) and accuracy~($AC$), where $CR$ is defined as the percentage of calls that are not~NCs, and $AC$ as the percentage of correct calls when disregarding~NCs:
 \begin{align*}
@@ -288,7 +288,7 @@ Details on the number of observed SNPs in each series are found in Table~\ref{ta
 The project is registered in the University of Copenhagen’s joint record of biobanks and record of research projects containing personal data (514-1056/24-3000) and complies with the rules of the General Data Protection Regulation (Regulation (EU) 2016/679).
 
 
-\subsubsection{Initial SNP Calling}
+\subsubsection{Initial SNP calling}
 The primary sequencing analysis was performed with Torrent Suite Software~v4.6 (Thermo Fisher Scientific).
 BAM files were generated using the HSG (v4.3.1).
 No noise filter was used.
@@ -310,14 +310,14 @@ Hence, comparison with the EQC method is not meaningful.
 The ensuing results affirm the SMLR model's utility in forensic genotyping, demonstrating its capacity to improve call rate and accuracy across various testing scenarios.
 
 
-\subsection{Pre-Analysis}
+\subsection{Pre-analysis}
 Table~\ref{tab:NC_WC} demonstrates how a fit of the SMLR model with an intercept and a square root transformation reduces the NCs for each DNA amount examined when compared to the HSG using~\eqref{eq:metric_CR} and similarly reduces the WCs when compared using~\eqref{eq:metric_AC}.
 Thus, for each column in Table~\ref{tab:NC_WC}, this SMLR model gives fewer NCs and WCs when the $q$-threshold lies between the model’s two alignment values displayed in that column, implying simultaneous improvements in call rate and accuracy.
 Since the metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} favour the HSG, and the cross-validations presented later show that the fit used in Table~\ref{tab:NC_WC} is not necessarily the best performing, the improvements displayed in the table are conservative.
 \subfile{table1.tex}
 
 
-\subsubsection{Relevant Dilutions}
+\subsubsection{Relevant dilutions}
 Fig.~\ref{fig:scatterplots} shows how the distribution of $(\sqrt{s_1}, \sqrt{s_2})$ becomes more spread out and how the HSG makes more NCs and WCs as the DNA amount decreases.
 It further illustrates that most WCs at low DNA amounts are heterozygous genotypes misidentified as homozygous due to a reduced signal for one of the alleles.
 For the SMLR model, this pattern necessitates higher $q$-threshold settings for accurate genotyping, resulting in lower call rates.
@@ -343,7 +343,7 @@ The former is where the call rate of the HSG becomes critically low and it more 
 However, to assess robustness and generalisability, the SMLR models will also be fitted using data from exterior DNA quantities.
 
 
-\subsubsection{Parameter Variance, Sample Size, and Separation}
+\subsubsection{Parameter variance, sample size, and separation}
 Bootstrap analyses were performed for the six SMLR variants mentioned in the Material and Methods section.
 They all showed similar results to those depicted in Supplementary Fig.~\ref{fig:bootstrap}.
 Here we see a flatter decline in the parameters’ variances after a sample size of around nine individuals or roughly 1,460~SNPs.
@@ -353,8 +353,8 @@ Supplementary Fig.~\ref{fig:bootstrap} indicates that the parameter estimates an
 It also shows that complete separation can be avoided by including examinations of very low DNA amounts (e.g.~\SI{25}{\pg}) in the fitting data, and that this does not substantially alter the decision boundaries.
 
 
-\subsection{Validation of the SMLR Model}
-\subsubsection{Cross-Validation Insights}
+\subsection{Validation of the SMLR model}
+\subsubsection{Cross-validation insights}
 The cross-validation experiments in Supplementary Fig.~\ref{fig:cv} demonstrate that the strong results from Table~\ref{tab:NC_WC} were not coincidental.
 The figure shows that when either the square root or logarithmic transformation is applied to the allele signals, the SMLR model generally outperforms the HSG with substantial reductions in NCs and WCs, improving both call rate and accuracy.
 
@@ -387,7 +387,7 @@ Note that the two plots use different axes scales, and that the first axes have 
 \end{figure*}
 
 
-\subsubsection{Call Rate and Accuracy Dependencies}
+\subsubsection{Call rate and accuracy dependencies}
 The accuracy of the SMLR model depends on the call rate through the width of the no-call zone, which is controlled by the value of the probability threshold $q$.
 This dependency on $q$ is depicted in Fig.~\ref{fig:accr_vs_q_low}, where the previously selected SMLR model is applied to the range of low DNA quantities.
 The left plot shows that the SMLR model surpasses the HSG's median accuracy of 99.567\% at a probability threshold of $q=0.74$.
@@ -412,7 +412,7 @@ The shaded horizontal bars represent the accuracy~(left) and call rate~(right) r
 \end{figure*}
 
 
-\subsubsection{SMLR for Quality Checks}
+\subsubsection{SMLR for quality checks}
 The locus rs7722456 had many reads of an unexpected nucleotide (adenine) for all examinations in the first dilution series.
 The HSG's quality control flagged only 37 of the 108 unusual observations with its QC flag for allelic imbalance.
 The limited efficiency in identifying allele balance issues was consistent for all DNA quantities examined in this dilution series.
@@ -508,12 +508,12 @@ Using SMLR for quality checks of the allele balance substantially improved imbal
 
 
 
-\section{Conflict of Interest Statement}
+\section{Conflict of interest statement}
 None.
 
 
 
-\section{Acknowledgments}
+\section{Acknowledgements}
 We thank Martin Jensen, Sidsel Raaby, and Hai Trieu Nguyen for laboratory assistance, and Martin Tuwel Jensen for technical assistance.
 
 

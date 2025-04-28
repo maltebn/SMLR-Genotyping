@@ -36,9 +36,9 @@
 
 \begin{document}
 
-\section*{Supplementary Material}
+\section*{Supplementary material}
 
-\subsection*{Proportionalities Between Relative Differences}
+\subsection*{Proportionalities between relative differences}
 In the following, the total number of calls is denoted $TC$, while the number of no-calls and wrong calls produced by the HID SNP Genotyper Plugin (HSG) are denoted $NC_{\text{HSG}}$ and $WC_{\text{HSG}}$, respectively.
 All three are fixed numbers, i.e. constants.
 The call rate ($CR_{\text{HSG}}$) and accuracy ($AC_{\text{HSG}}$) of the HSG are defined as
@@ -50,7 +50,7 @@ For the SMLR model, the number of no-calls and wrong calls depend on the probabi
 In order to compare the accuracy of the SMLR model against the HSG, the $q$-threshold is set to the minimal value, $q_{NC}$, such that $NC_{\text{SMLR}}(q_{NC}) \geq NC_{\text{HSG}}$, and the resulting number of wrong calls, $WC_{\text{SMLR}}(q_{NC}) = WC_{\text{SMLR}\mid\text{HSG}}$, is used to compute the accuracy for the SMLR model.
 Likewise, the call rate of the SMLR model is compared against the HSG by setting the $q$-threshold at the minimal value, $q_{WC}$, such that $WC_{\text{SMLR}}(q_{WC}) \geq WC_{\text{HSG}}$, and the resulting number of no-calls, $NC_{\text{SMLR}}(q_{WC}) = NC_{\text{SMLR}\mid\text{HSG}}$, is used to compute the call rate for the SMLR model.
 
-\subsubsection*{Call Rates and No-Calls}
+\subsubsection*{Call rates and no-calls}
 The proportionality at \eqref{eq:metric_CR} follows from the definitions of $CR_{\text{HSG}}$ and $CR_{\text{SMLR}\mid\text{HSG}}$:
 \begin{align}
 \frac{CR_{\text{SMLR}\mid\text{HSG}} - CR_{\text{HSG}}}{CR_{\text{HSG}}}
@@ -66,7 +66,7 @@ The proportionality at \eqref{eq:metric_CR} follows from the definitions of $CR_
 \frac{NC_{\text{HSG}} - NC_{\text{SMLR}\mid\text{HSG}}}{NC_{\text{HSG}}}\label{eq:prop_CR}
 \end{align}
 
-\subsubsection*{Accuracies and Wrong Calls}
+\subsubsection*{Accuracies and wrong calls}
 Rigorous proportionality at \eqref{eq:metric_AC} is obtained when $NC_{\text{SMLR}}(q_{NC}) = NC_{\text{HSG}}$:
 \begin{align*}
 \frac{AC_{\text{SMLR}\mid\text{HSG}} - AC_{\text{HSG}}}{AC_{\text{HSG}}}
@@ -108,7 +108,7 @@ $\frac{TC - NC_{\text{HSG}}}{TC - NC_{\text{SMLR}}(q_{NC})}$ & 1 & 1.0011 & 1.00
 
 
 \newpage
-\subsection*{The Negative Log-Likelihood Function}
+\subsection*{The negative log-likelihood function}
 Let $\mathcal{I}_{11}$ and $\mathcal{I}_{22}$ be index sets for the observations with homozygous genotypes in allele $a_1$ and $a_2$, respectively, and let $\mathcal{I}_{12}$ be the index set for the observations with heterozygous genotypes.
 Let $m \in \mathcal{I} = \mathcal{I}_{11}\cup\mathcal{I}_{22}\cup\mathcal{I}_{12}$ be a general index and define $t_m = (1, f(s_1^m), f(s_2^m))$, where $s_1^m$ and $s_2^m$ denote the allele signals for $a_1$ and $a_2$ of the observation with index $m$.
 In accordance with the notation used in~\eqref{eq:posterior}, let $p_{11}^i$, $p_{22}^j$, and $p_{12}^k$ be the conditional genotype probabilities of the observations with indices $i \in \mathcal{I}_{11}$, $j \in \mathcal{I}_{22}$, and $k \in \mathcal{I}_{12}$, respectively.
@@ -158,7 +158,7 @@ Note how $\beta_1$ is multiplied by a term that ideally sums the major allele si
 
 
 \newpage
-\subsection*{Technical Details on the Cross-Validation}
+\subsection*{Technical details on the cross-validation}
 Each of the six columns of plots in Supplementary Fig.~\ref{fig:cv} represents its own cross-validation.
 As indicated at the top of the figure, each of the cross-validations used different collections of DNA amounts to fit and test the models.
 In each cross-validation, the data was split randomly 1,000 times into disjoint pairs of fitting and testing subsets on which all of the models were validated.
@@ -170,7 +170,7 @@ When common DNA amount(s) were used, 75\% of the common data was (randomly) sele
 
 \vspace{2cm}
 %\newpage
-\subsection*{Additional Figures}
+\subsection*{Additional figures}
 \noindent (see next page)
 
 
