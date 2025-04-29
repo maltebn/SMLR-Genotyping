@@ -162,7 +162,7 @@ However, it is desirable to model $P\left(G \mid s_1, s_2\right)$ in a way that 
 \log\left(\frac{p_{22}}{p_{12}}\right) \, &= \, \beta_0 + \beta_2 f\left(s_1\right) + \beta_1 f\left(s_2\right).
 \end{split}
 \end{align}
-Here, the function $f$ is a variance-stabilising transformation of the allele signals, e.g.~$f(s_i) = \sqrt{s_i}$.
+Here, the function $f$ is a variance-stabilising transformation of the allele signals, e.g.~$f\left(s_i\right) = \sqrt{s_i}$.
 In standard multinomial logistic regression, the second equation would have different $\beta_i$-parameters than the first, and the resulting parameter estimates would depend on which allele is labelled $a_1$ or $a_2$.
 The introduced symmetry eliminates this dependency and ensures that the model's behaviour is invariant to allele labelling.
 The conditional genotype probabilities become
