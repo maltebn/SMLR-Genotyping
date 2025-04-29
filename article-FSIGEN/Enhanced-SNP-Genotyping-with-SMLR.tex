@@ -112,8 +112,8 @@ However, for low amounts of input DNA, this approach significantly decreases the
 Other probabilistic approaches have been proposed to handle uncertainty in low-coverage sequencing~\cite{mostad}, but they either integrate genotype likelihoods directly into downstream computations or rely on prior information about the genotypes, such as population allele frequencies, and some are limited to integer-valued data such as allele reads or counts.
 
 We introduce a symmetric multinomial logistic regression (SMLR) model and a framework for refined NC declaration that improves genotyping accuracy and call rate, especially in challenging conditions.
-The SMLR model does not rely on prior genotype probabilities and handles integer and continuous allele signals.
-Its symmetric formulation ensures it remains indifferent to the order of the allele signals, making the SMLR model robust and straightforward in its assumptions.
+The SMLR model does not rely on prior genotype probabilities and can handle integer or continuous allele signals.
+Its symmetric formulation ensures it remains indifferent to the ordering or labelling of the two alleles, making the SMLR model robust and straightforward in its assumptions.
 
 We explore the SMLR model's efficiency and reliability, laying out guidelines for its application in forensic SNP genotyping.
 We also demonstrate the SMLR model's potential in quality control, particularly in identifying and managing allelic imbalance.
