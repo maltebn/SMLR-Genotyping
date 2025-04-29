@@ -59,11 +59,11 @@
 
 
 \begin{abstract}
-In genotyping, determining Single Nucleotide Polymorphisms~(SNPs) is standard practice, but it becomes difficult when analysing small quantities of input DNA, as is often required in forensic applications.
+In genotyping, determining single nucleotide polymorphisms~(SNPs) is standard practice, but it becomes difficult when analysing small quantities of input DNA, as is often required in forensic applications.
 Existing SNP genotyping methods, such as the HID SNP Genotyper Plugin~(HSG) from Thermo Fisher Scientific, perform well with adequate DNA input levels but often produce erroneously called genotypes when DNA quantities are low.
 To mitigate these errors, genotype quality can be checked with the HSG.
 However, enforcing the HSG's quality checks decreases the call rate by introducing more no-calls, and it does not eliminate all wrong calls.
-This study presents and validates a Symmetric Multinomial Logistic Regression~(SMLR) model designed to enhance genotyping accuracy and call rate with small amounts of DNA.
+This study presents and validates a symmetric multinomial logistic regression~(SMLR) model designed to enhance genotyping accuracy and call rate with small amounts of DNA.
 Comprehensive bootstrap and cross-validation analyses across a wide range of DNA quantities demonstrate the robustness and efficiency of the SMLR model in maintaining high call rates without compromising accuracy compared to the HSG.
 For DNA amounts as low as \SI{31.25}{\pg}, the SMLR method reduced the rate of no-calls by 50.0\% relative to the HSG while maintaining the same rate of wrong calls, resulting in a call rate of 96.0\%.
 Similarly, SMLR reduced the rate of wrong calls by 55.6\% while maintaining the same call rate, achieving an accuracy of 99.775\%.
@@ -83,7 +83,7 @@ The model can also improve the allele balance quality check.
 \onecolumn
 \begin{highlights}
 \item A new probabilistic model with few parameters for SNP genotype calling.
-\item The model is based on Symmetric Multinomial Logistic Regression (SMLR).
+\item The model is based on symmetric multinomial logistic regression (SMLR).
 \item SNP no-call and error rates were reduced by $\sim\!\!\!\:50\%$ at \SI{31}{\pg} DNA compared to the HID SNP Genotyper Plugin (Thermo Fisher Scientific).
 \item The SNP no-call rate was significantly reduced for \SIrange[range-units = single, range-phrase = --]{62}{250}{\pg} DNA.
 \item Quality checks with SMLR improve the detection of allele imbalance.
@@ -103,7 +103,7 @@ Symmetric multinomial logistic regression \sep Forensic genetics \sep Low DNA co
 
 %% main text
 \section{Introduction}
-In forensic genotyping, the accurate calling of Single Nucleotide Polymorphisms~(SNPs) is crucial but becomes a challenge when dealing with low amounts of DNA, which is typical for biological traces.
+In forensic genotyping, the accurate calling of single nucleotide polymorphisms~(SNPs) is crucial but becomes a challenge when dealing with low amounts of DNA, which is typical for biological traces.
 While amplification-based genotyping tools, such as the HID SNP Genotyper Plugin (HSG) from Thermo Fisher Scientific (Waltham, MA, USA), excel with sufficient amounts of DNA, their performance declines with lower DNA quantities, resulting in increased erroneous genotype calls and reduced call rates~\cite{alasfi, mostad, butler, swgdam}.
 
 To reduce the number of wrong calls~(WCs), it seems natural to declare a no-call~(NC) for genotypes not passing the quality checks~(QCs) provided by the HSG.
@@ -111,7 +111,7 @@ However, for low amounts of input DNA, this approach significantly decreases the
 
 Other probabilistic approaches have been proposed to handle uncertainty in low-coverage sequencing~\cite{mostad}, but they either integrate genotype likelihoods directly into downstream computations or rely on prior information about the genotypes, such as population allele frequencies, and some are limited to integer-valued data such as allele reads or counts.
 
-We introduce a Symmetric Multinomial Logistic Regression (SMLR) model and a framework for refined NC declaration that improves genotyping accuracy and call rate, especially in challenging conditions.
+We introduce a symmetric multinomial logistic regression (SMLR) model and a framework for refined NC declaration that improves genotyping accuracy and call rate, especially in challenging conditions.
 The SMLR model does not rely on prior genotype probabilities and handles integer and continuous allele signals.
 Its symmetric formulation ensures it remains indifferent to the order of the allele signals, making the SMLR model robust and straightforward in its assumptions.
 
@@ -127,13 +127,13 @@ We also demonstrate the SMLR model's potential in quality control, particularly 
 \caption{
 Genotype predictions for the examinations of \SI{31.25}{\pg} DNA.\\
 Each plot displays 1,931~SNP observations classified using the genotyping methods:
-HID SNP Genotyper Plugin~(HSG), Enforcing the Quality Checks~(EQC), and Symmetric Multinomial Logistic Regression~(SMLR).
-A dot represents a set of read counts $(s_1, s_2)$ for an SNP.
-It is coloured by the true genotype: red for heterozygous and blue or yellow for homozygous.
+HID SNP Genotyper Plugin~(HSG), enforcing the quality checks~(EQC), and symmetric multinomial logistic regression~(SMLR).
+A dot represents a pair of SNP read counts $\left(s_1, s_2\right)$.
+The true genotypes are coloured red for heterozygotes and blue or yellow for homozygotes.
 Failed genotype predictions are indicated by red crosses for wrong calls and black pluses for no-calls.
 In the EQC plot~(middle), the grey areas show where the HSG is guaranteed to flag for allelic imbalance.
-In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (a value chosen for illustrative purpose).
-Outside the grey area, the predicted genotype has $P(G \mid s_1, s_2) \geq q$.
+In the SMLR plot (right), the solid lines show the decision boundaries of the SMLR model with an intercept fitted to square-root transformed allele signals. The grey area marks the no-call zone where genotype probabilities fall short of the threshold $q = 0.9937$ (a value chosen for illustrative purposes).
+Outside the grey area, the predicted genotype has $P\left(G \mid s_1, s_2\right) \geq q$.
 }
 \label{fig:methods}
 \end{figure*}
@@ -147,19 +147,19 @@ Along with its genotype calls, it outputs three quality checks:
 \item A check of the allele balance that flags homozygous calls if the ratio of the major allele's coverage to the total coverage of all four nucleotides falls below 0.95 and heterozygous calls if it falls outside the range of 0.35 to 0.65.
 \end{itemize}
 As seen in the leftmost and middle plots of Fig.~\ref{fig:methods}, the HSG's genotype calls and determination of NCs are not based on these QCs alone, so genotypes are often called despite the presence of QC flags, and NCs are declared even when no QC flag is present~\cite[p.~35]{hid}.
-Therefore, Enforcing the Quality Checks~(EQC) by turning genotypes with QC flags into NCs will increase the number of NCs and thus reduce the call rate.
+Therefore, enforcing the quality checks~(EQC) by turning genotypes with QC flags into NCs will increase the number of NCs and thus reduce the call rate.
 
 
 \subsection{The symmetric multinomial logistic regression model}
 \subsubsection{Model formulation}
 The SMLR model presents a statistical solution to biallelic genotyping challenges by using the allele signals to estimate conditional genotype probabilities.
-For a biallelic marker with alleles $a_1$ and $a_2$ having measured signals $s_1$ and $s_2$, we consider the unphased genotype $G$ with outcomes $\{a_1a_1, a_1a_2, a_2a_2\}$ and the conditional genotype probabilities $p_{ij} = P\left(G = a_i a_j \mid s_1, s_2 \right)$.
+For a biallelic marker with alleles $a_1$ and $a_2$ having measured signals $s_1$ and $s_2$, we consider the unphased genotype $G$ with outcomes $\lbrace a_1a_1, a_1a_2, a_2a_2\rbrace$ and the conditional genotype probabilities $p_{ij} = P\left(G = a_i a_j \mid s_1, s_2 \right)$.
 Multinomial logistic regression is apt for modelling the conditional distribution of $G$ given $s_1$ and $s_2$ with the heterozygous genotype as a baseline category for convenience and standardisation~\cite[p.~293]{agresti}.
-However, it is desirable to model $P(G \mid s_1, s_2)$ in a way that is invariant to the labelling of the alleles by introducing a symmetry into the model equations, leading to the SMLR model:
+However, it is desirable to model $P\left(G \mid s_1, s_2\right)$ in a way that is invariant to the labelling of the alleles by introducing a symmetry into the model equations, leading to the SMLR model:
 \begin{align}\label{eq:smlr}
 \begin{split}
-\log\left(\frac{p_{11}}{p_{12}}\right) \, &= \, \beta_0 + \beta_1 f(s_1) + \beta_2 f(s_2), \\
-\log\left(\frac{p_{22}}{p_{12}}\right) \, &= \, \beta_0 + \beta_2 f(s_1) + \beta_1 f(s_2).
+\log\left(\frac{p_{11}}{p_{12}}\right) \, &= \, \beta_0 + \beta_1 f\left(s_1\right) + \beta_2 f\left(s_2\right), \\
+\log\left(\frac{p_{22}}{p_{12}}\right) \, &= \, \beta_0 + \beta_2 f\left(s_1\right) + \beta_1 f\left(s_2\right).
 \end{split}
 \end{align}
 Here, the function $f$ is a variance-stabilising transformation of the allele signals, e.g.~$f(s_i) = \sqrt{s_i}$.
@@ -168,9 +168,9 @@ The introduced symmetry eliminates this dependency and ensures that the model's 
 The conditional genotype probabilities become
 \begin{align}\label{eq:posterior}
 \begin{split}
-p_{11} \, &= \, \frac{e^{\beta_0 + \beta_1 f(s_1) + \beta_2 f(s_2) }}{1 + e^{\beta_0 + \beta_1 f(s_1) + \beta_2 f(s_2)} + e^{\beta_0 + \beta_2 f(s_1) + \beta_1 f(s_2)}}, \\
-p_{22} \, &= \, \frac{e^{\beta_0 + \beta_2 f(s_1) + \beta_1 f(s_2) }}{1 + e^{\beta_0 + \beta_1 f(s_1) + \beta_2 f(s_2)} + e^{\beta_0 + \beta_2 f(s_1) + \beta_1 f(s_2)}}, \\
-p_{12} \, &= \, \frac{1}{1 + e^{\beta_0 + \beta_1 f(s_1) + \beta_2 f(s_2)} + e^{\beta_0 + \beta_2 f(s_1) + \beta_1 f(s_2)}},
+p_{11} \, &= \, \frac{e^{\beta_0 + \beta_1 f\left(s_1\right) + \beta_2 f\left(s_2\right) }}{1 + e^{\beta_0 + \beta_1 f\left(s_1\right) + \beta_2 f\left(s_2\right)} + e^{\beta_0 + \beta_2 f\left(s_1\right) + \beta_1 f\left(s_2\right)}}, \\
+p_{22} \, &= \, \frac{e^{\beta_0 + \beta_2 f\left(s_1\right) + \beta_1 f\left(s_2\right) }}{1 + e^{\beta_0 + \beta_1 f\left(s_1\right) + \beta_2 f\left(s_2\right)} + e^{\beta_0 + \beta_2 f\left(s_1\right) + \beta_1 f\left(s_2\right)}}, \\
+p_{12} \, &= \, \frac{1}{1 + e^{\beta_0 + \beta_1 f\left(s_1\right) + \beta_2 f\left(s_2\right)} + e^{\beta_0 + \beta_2 f\left(s_1\right) + \beta_1 f\left(s_2\right)}},
 \end{split}
 \end{align}
 where $\beta_1$ is expected to be positive, such that $p_{11}$ increases with $s_1$ and $p_{22}$ increases with $s_2$, and $\beta_2$ is expected to be negative, so that $p_{11}$ and $p_{22}$ decrease with increasing $s_2$ and $s_1$, respectively.
@@ -178,14 +178,14 @@ It is expected that $\beta_1 < \lvert \beta_2 \rvert$ such that $p_{12}$ goes to
 
 
 \subsubsection{SNP genotype calling}
-With the SMLR model, the genotype calling for an observation is straightforward: the genotype to be called is that associated with the highest conditional probability estimated from \eqref{eq:posterior}.
-The decision boundaries are the points $(s_1, s_2)$ where at least one of the model equations from \eqref{eq:smlr} equals zero.
+With the SMLR model, the genotype calling for an observation is straightforward: the genotype to be called is the one associated with the highest conditional probability estimated from \eqref{eq:posterior}.
+The decision boundaries are the points $\left(s_1, s_2\right)$ where at least one of the model equations from \eqref{eq:smlr} equals zero.
 In other words, where the conditional probability of the heterozygous genotype equals the conditional probability of one of the homozygous genotypes.
-As shown in the SMLR plot in Fig.~\ref{fig:methods}, these boundaries can be represented graphically in a plot of $f(s_2)$ versus $f(s_1)$ by the lines
+As shown in the SMLR plot in Fig.~\ref{fig:methods}, these boundaries can be represented graphically in a plot of $f\left(s_2\right)$ versus $f\left(s_1\right)$ by the lines
 \begin{align}\label{eq:boundaries}
 \begin{split}
-f(s_2) \, &= \, -\frac{\beta_0}{\beta_2} - \frac{\beta_1}{\beta_2} f(s_1), \\
-f(s_2) \, &= \, -\frac{\beta_0}{\beta_1} - \frac{\beta_2}{\beta_1} f(s_1).
+f\left(s_2\right) \, &= \, -\frac{\beta_0}{\beta_2} - \frac{\beta_1}{\beta_2} f\left(s_1\right), \\
+f\left(s_2\right) \, &= \, -\frac{\beta_0}{\beta_1} - \frac{\beta_2}{\beta_1} f\left(s_1\right).
 \end{split}
 \end{align}
 The plot also illustrates how a measure of call confidence is implemented by introducing the user-defined probability threshold, $q$.
@@ -214,7 +214,7 @@ It requires an initial guess for the parameter vector, which can be set to
 \end{align*}
 reflecting the expectations of $\beta_2 < 0 < \beta_1 < \lvert \beta_2 \rvert$.
 These are merely expectations of the resulting parameters, not requirements or constraints on the model equations.
-Therefore, the initial guess can take values beyond these expectations, such as $(0, 0, -1)$.
+Therefore, the initial guess can take values beyond these expectations, such as $\left(0, 0, -1\right)$.
 
 
 \subsection{Assessing the minimal sample size}
@@ -247,19 +247,19 @@ In general, the relative difference in call rates is proportional to the relativ
 Here, $NC_{\text{HSG}}$ and $WC_{\text{HSG}}$ are the no-calls and wrong calls of the HSG, while $NC_{\text{SMLR}\mid\text{HSG}}$ and $WC_{\text{SMLR}\mid\text{HSG}}$ are the corresponding counts for the SMLR model when its WCs and NCs are aligned to those of the HSG, respectively.
 The proportionalities~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} are derived in the supplementary material at~\eqref{eq:prop_CR} and~\eqref{eq:prop_AC}.
 
-For signals exhibiting variation consistent with a Poisson distribution, commonly observed for integer-valued data, the transformation $f(x) = \sqrt{x}$ is well established as an effective method for stabilising variance~\cite{bartlett}.
+For signals exhibiting variation consistent with a Poisson distribution, commonly observed for integer-valued data, the transformation $f\left(x\right) = \sqrt{x}$ is well established as an effective method for stabilising variance~\cite{bartlett}.
 However, even a theoretically well-justified choice of $f$ will not necessarily optimise the performance metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC}.
 Thus, to explore the effectiveness of various transformations and intercept configurations, six SMLR model formulations were tested: identity, square root, and logarithmic transformations
 \begin{equation*}
-f(s_i) = s_i, \quad f(s_i) = \sqrt{s_i}, \quad \text{and} \quad f(s_i) = \log(s_i+1),
+f\left(s_i\right) = s_i, \quad f\left(s_i\right) = \sqrt{s_i}, \quad \text{and} \quad f\left(s_i\right) = \log\left(s_i+1\right),
 \end{equation*}
 each with and without an intercept (i.e.~$\beta_0 \neq 0$ and $\beta_0 = 0$).
 
 The models were evaluated through extensive cross-validation, a method that randomly divides the data into disjoint training and test subsets, the former used for model fitting and the latter exclusively to evaluate model performance~\cite{stone, picard}.
 Repeating this process with different data splits helps estimate how the model will perform on new datasets.
-To assess robustness and generalisability, several cross-validations were conducted, considering cases where training and test subsets were drawn from the same DNA dilutions and different dilutions.
+To assess robustness and generalisability, several cross-validations were conducted, considering cases where training and test subsets were drawn from the same and different DNA dilutions.
 
-This structured approach enables comparing the models in an objective setting and ultimately allows for identifying the optimal model in forensic genetic contexts.
+This structured approach enables an objective comparison of the models and ultimately allows identification of the optimal model in forensic genetic contexts.
 
 
 \subsection{Software}
@@ -285,7 +285,8 @@ The second series was a single examination of four two-fold DNA dilutions from e
 The individuals' SNP profiles were known from previous analyses.
 Details on the number of observed SNPs in each series are found in Table~\ref{tab:NC_WC}.
 
-The project is registered in the University of Copenhagen’s joint record of biobanks and record of research projects containing personal data (514-1056/24-3000) and complies with the rules of the General Data Protection Regulation (Regulation (EU) 2016/679).
+The project is registered in the University of Copenhagen’s joint record of biobanks and record of research projects containing personal data (514-1056/24-3000).
+It complies with the rules of the General Data Protection Regulation (Regulation (EU) 2016/679).
 
 
 \subsubsection{Initial SNP calling}
@@ -305,7 +306,7 @@ SNP data with zero reads for both alleles were removed from the dataset, as they
 
 \section{Results}
 For low amounts of DNA, the HSG-plot and EQC-plot in Fig.~\ref{fig:methods} reveal that using the QC-flags to improve the accuracy is inefficient:
-converting flagged observations to NCs has a significant cost to the call rate and does not even eliminate all WCs.
+converting flagged observations to NCs has a significant cost to the call rate and does not eliminate all WCs.
 Hence, comparison with the EQC method is not meaningful.
 The ensuing results affirm the SMLR model's utility in forensic genotyping, demonstrating its capacity to improve call rate and accuracy across various testing scenarios.
 
@@ -313,12 +314,12 @@ The ensuing results affirm the SMLR model's utility in forensic genotyping, demo
 \subsection{Pre-analysis}
 Table~\ref{tab:NC_WC} demonstrates how a fit of the SMLR model with an intercept and a square root transformation reduces the NCs for each DNA amount examined when compared to the HSG using~\eqref{eq:metric_CR} and similarly reduces the WCs when compared using~\eqref{eq:metric_AC}.
 Thus, for each column in Table~\ref{tab:NC_WC}, this SMLR model gives fewer NCs and WCs when the $q$-threshold lies between the model’s two alignment values displayed in that column, implying simultaneous improvements in call rate and accuracy.
-Since the metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} favour the HSG, and the cross-validations presented later show that the fit used in Table~\ref{tab:NC_WC} is not necessarily the best performing, the improvements displayed in the table are conservative.
+Since the metrics in~\eqref{eq:metric_CR} and~\eqref{eq:metric_AC} favour the HSG, and the cross-validations presented later show that the fit used in Table~\ref{tab:NC_WC} is not necessarily the best performing one, the improvements displayed in the table are conservative.
 \subfile{table1.tex}
 
 
 \subsubsection{Relevant dilutions}
-Fig.~\ref{fig:scatterplots} shows how the distribution of $(\sqrt{s_1}, \sqrt{s_2})$ becomes more spread out and how the HSG makes more NCs and WCs as the DNA amount decreases.
+Fig.~\ref{fig:scatterplots} shows how the distribution of $\left(\sqrt{s_1}, \sqrt{s_2}\right)$ becomes more spread out and how the HSG makes more NCs and WCs as the DNA amount decreases.
 It further illustrates that most WCs at low DNA amounts are heterozygous genotypes misidentified as homozygous due to a reduced signal for one of the alleles.
 For the SMLR model, this pattern necessitates higher $q$-threshold settings for accurate genotyping, resulting in lower call rates.
 Consequently, genotyping with the Precision ID Ancestry Panel requires more than \SI{25}{\pg} DNA to maintain acceptable call rates.
@@ -327,7 +328,8 @@ Consequently, genotyping with the Precision ID Ancestry Panel requires more than
 \includegraphics[width=\textwidth]{FIG_2-two-column.jpeg}
 \caption{
 Distribution of square-root transformed allele signals.\\
-A dot represents a set of read counts $(s_1, s_2)$ for an SNP and is coloured according to the true genotype: red for heterozygous and blue or yellow for homozygous genotypes.
+A dot represents a pair of SNP read counts $\left(s_1, s_2\right)$.
+The true genotypes are coloured red for heterozygotes and blue or yellow for homozygotes.
 The displayed DNA quantities indicate where the accuracy of the HID SNP Genotyper Plugin falls below 100\%, with its wrong calls marked by red crosses and no-calls by black pluses.
 }
 \label{fig:scatterplots}
@@ -339,14 +341,14 @@ At \SI{250}{\pg} DNA, the HSG produces a few WCs and introduces significantly mo
 Fig.~\ref{fig:scatterplots} and Table~\ref{tab:NC_WC} show that the HSG makes significantly more WCs at \SI{50}{\pg} DNA and below.
 
 Based on these observations, the following analyses focus on testing genotyping performance within the two ranges of DNA quantities: \SIrange[range-units = single, range-phrase = --]{31.25}{50}{\pg} and \SIrange[range-units = single, range-phrase = --]{62.5}{250}{\pg}.
-The former is where the call rate of the HSG becomes critically low and it more frequently makes WCs.
+The former is where the call rate of the HSG becomes critically low and where it more frequently makes WCs.
 However, to assess robustness and generalisability, the SMLR models will also be fitted using data from exterior DNA quantities.
 
 
 \subsubsection{Parameter variance, sample size, and separation}
 Bootstrap analyses were performed for the six SMLR variants mentioned in the Materials and methods section.
 They all showed similar results to those depicted in Supplementary Fig.~\ref{fig:bootstrap}.
-Here we see a flatter decline in the parameters’ variances after a sample size of around nine individuals or roughly 1,460~SNPs.
+Here, we see a less pronounced decline in the parameters’ variances after a sample size of around nine individuals or roughly 1,460~SNPs.
 This sample size provides a good balance between the proportions of data used for fitting and testing in the cross-validation, especially in the least populated examination (\SI{31.25}{\pg} DNA), where the use of nine individuals for fitting corresponds to 75\% of the data.
 
 Supplementary Fig.~\ref{fig:bootstrap} indicates that the parameter estimates and decision boundaries depend on the DNA amount, with the effect becoming more noticeable at \SI{12.5}{\pg} and below.
@@ -356,9 +358,9 @@ It also shows that complete separation can be avoided by including examinations 
 \subsection{Validation of the SMLR model}
 \subsubsection{Cross-validation insights}
 The cross-validation experiments in Supplementary Fig.~\ref{fig:cv} demonstrate that the strong results from Table~\ref{tab:NC_WC} were not coincidental.
-The figure shows that when either the square root or logarithmic transformation is applied to the allele signals, the SMLR model generally outperforms the HSG with substantial reductions in NCs and WCs, improving both call rate and accuracy.
+The figure shows that when either the square root or the logarithmic transformation was applied to the allele signals, the SMLR model generally outperformed the HSG with substantial reductions in NCs and WCs, leading to simultaneous improvements in call rate and accuracy.
 
-The subplots in the figure's first and fourth columns show nearly horizontal performance lines, indicating that fitting to combined data from the examinations of \SI{25}{\pg} and \SI{50}{\pg} DNA gives particularly stable SMLR models for both the low (\SIrange[range-units = single, range-phrase = --]{31.25}{50}{\pg}) and high (\SIrange[range-units = single, range-phrase = --]{62.5}{250}{\pg}) DNA amounts.
+The subplots in the figure's first and fourth columns show nearly horizontal performance lines, indicating that fitting to combined data from the examinations of \SI{25}{\pg} and \SI{50}{\pg} DNA gave particularly stable SMLR models for both the low (\SIrange[range-units = single, range-phrase = --]{31.25}{50}{\pg}) and high (\SIrange[range-units = single, range-phrase = --]{62.5}{250}{\pg}) DNA amounts.
 Therefore, the subsequent analyses are based on these fits to let the results inherit this stability.
 
 Supplementary Fig.~\ref{fig:cv} intends to compare each SMLR variant to the HSG and not to make comparisons between the variants themselves, as a variant that excels when aligned to the HSG is not necessarily the best performing for other balances between the call rate and accuracy.
@@ -368,7 +370,7 @@ the call rates from the 1,000 cross-validation iterations were rounded to one de
 This approach allows for a more precise assessment of how the accuracy of each SMLR variant changes with the call rate.
 
 The red dot in each plot of Fig.~\ref{fig:ac_cr} represents the median accuracy and call rate of the HSG.
-The lines for the models with $f(s_i) = \sqrt{s_i}$ and $f(s_i) = \log(s_i+1)$ are generally seen to move well to the left of and above these dots.
+The lines for the models with $f\left(s_i\right) = \sqrt{s_i}$ and $f\left(s_i\right) = \log\left(s_i+1\right)$ are generally seen to move well to the left of and above these dots.
 Thus, these four SMLR models convincingly outperform the HSG in median accuracy and call rate.
 For the low DNA amounts, they increase the call rate to more than 95\% while still achieving higher accuracies than the HSG.
 At the highest call rates, the square-root model without an intercept (dark blue line) achieves slightly higher median accuracies than the other variants.
@@ -436,11 +438,11 @@ Furthermore, even with significant differences in the nucleotide-signal distribu
 However, we do not see any alarming differences in the nucleotides' signals (see Fig.~\ref{fig:s_density}).\\
 
 
-An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P(s \mid g)$ and combines them with prior genotype probabilities $P(g)$ to compute $P(g \mid s)$ via Bayes’ theorem.
+An alternative approach to handling uncertainty in low-coverage data is the probabilistic model described by Mostad et al. (2023)~\cite{mostad}, which derives genotype likelihoods $P\left(s \mid g\right)$ and combines them with prior genotype probabilities $P\left(g\right)$ to compute $P\left(g \mid s\right)$ via Bayes’ theorem.
 This structure is particularly useful when allele frequency information is known and reliably specified, such as in population-based or familial relationship inference contexts.
-However, prior information is often unavailable in many forensic genotyping scenarios, such as criminal investigations or unidentified remains.
-The SMLR model, by contrast, estimates $P(g \mid s)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
-This distinction makes the SMLR framework particularly well-suited for general forensic use, especially in cases involving unknown individuals or populations.\\
+However, prior information is often unavailable in forensic genotyping scenarios, such as criminal investigations or cases involving unidentified remains.
+The SMLR model, by contrast, estimates $P\left(g \mid s\right)$ directly without relying on external priors, thereby avoiding potential bias from misspecified allele frequencies.
+This distinction makes the SMLR framework well-suited for general forensic use, especially in cases involving unknown individuals or populations.\\
 
 
 Measuring the performance of the SMLR variants is not straightforward when NCs are introduced and should be judged neutrally, i.e.~from the perspective that they are meant to remove WCs, whereby NCs should not be seen as incorrect genotype predictions.
@@ -470,7 +472,7 @@ For robust fitting, it is important to have a reasonable overlap between the gen
 If this is not feasible, including a few examinations with as little as \SI{25}{\pg} DNA can effectively achieve overlap.
 However, the bootstrap analysis showed that adding data from examinations of extremely low DNA quantities, like \SI{12.5}{\pg}, may negatively distort the model's decision boundaries.
 
-In the Estimation subsection, it was suggested that the initial value of the parameter vector be set to $(1, -2)$ or to $(0, 1, -2)$ if an intercept is included.
+In the Estimation subsection, it was suggested that the initial value of the parameter vector be set to $\left(1, -2\right)$ or to $\left(0, 1, -2\right)$ if an intercept is included.
 Depending on the scale of the signals and the choice of variance-stabilising transformation, other initial values may be more suitable.
 For example, we encountered issues with the initialisation of 'optim' when using the suggested initial values for the models with an identity transformation.
 However, these issues were resolved by setting $\beta_1^{\text{init}} = 0$ and $\beta_2^{\text{init}} = -1$.
@@ -489,7 +491,7 @@ Although the cross-validations demonstrated that MLE yields effective SMLR model
 Research into such methods---moving beyond pure classification to explicitly optimise performance in the presence of NCs---could be valuable for forensic genotyping.\\
 
 
-Genetic software like GenoGeographer~\cite{tvede18, tvede17, genogeographer} typically assumes that genotype calls are correct once they pass quality filters, overlooking the inherent uncertainty in genotyping, particularly in forensic genetics where samples of low quality and quantity are common.
+Genetic software like GenoGeographer~\cite{tvede18, tvede17, genogeographer} typically assumes that genotype calls are correct once they pass quality filters, overlooking the inherent uncertainty in genotyping, particularly in forensic genetics, where samples of low quality and quantity are common.
 A statistical approach, such as the SMLR model, provides estimates of the conditional genotype probabilities, which can help mitigate this uncertainty.
 However, high accuracy of a model's predictions does not guarantee that its probability estimates align with the genotype frequencies in real data~\cite{shmueli}.
 To integrate such probabilities successfully into existing software, empirical verification is crucial.
@@ -514,7 +516,7 @@ None.
 
 
 \section{Acknowledgements}
-We thank Martin Jensen, Sidsel Raaby, and Hai Trieu Nguyen for laboratory assistance, and Martin Tuwel Jensen for technical assistance.
+We thank Martin Jensen, Sidsel Raaby, and Hai Trieu Nguyen for laboratory assistance and Martin Tuwel Jensen for technical assistance.
 
 
 
