@@ -68,7 +68,7 @@ genotype_freq <- allele_counts |>
 
 # Quick overall comparison per dilution
 ```{r}
-smlr_fit <- dd_GT_both |> filter(Dilution %in% c(50, 31.25)) |> fit_symmetry_model2(intercept = T, b_int = c(0, 1,-2))
+smlr_fit <- dd_GT_both |> filter(Dilution %in% c(50, 25)) |> fit_symmetry_model2(f = sqrt, intercept = T, b_int = c(0, 1,-2))
 dd_GT_both_pred <- dd_GT_both |> predict_prob_threshold(smlr_fit)
 dd_pred_dils <- split(dd_GT_both_pred, dd_GT_both_pred$Dilution)
 ```
@@ -111,10 +111,10 @@ dd_MTK_bi_final <- names(dd_pred_dils) |> lapply(function(dil) {
       m <- round(2*as.numeric(dil)/6)
       predict_MTK_model(x, m, e=0.06, "uniform_bi")
     }) |> bind_rows()
-}) |> bind_rows() |> select(Target.ID, Dilution, ID, MTK_pred_u = MTK_pred, MTK_pmax_u = MTK_pmax)
+}) |> bind_rows() |> select(Target.ID, Dilution, Run, ID, MTK_pred_u = MTK_pred, MTK_pmax_u = MTK_pmax)
 
 dd_MTK_final <- dd_MTK_final |> 
-  left_join(dd_MTK_bi_final, by = c("Target.ID", "Dilution", "ID"))
+  left_join(dd_MTK_bi_final, by = c("Target.ID", "Dilution", "Run", "ID"))
 
 
 saveRDS(dd_MTK_final, file.path("..", "data", "00_dd_MTK.rds"))

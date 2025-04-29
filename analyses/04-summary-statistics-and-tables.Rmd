@@ -450,7 +450,7 @@ ncwc.table <- cbind(NA, ncwc.table)
 
 library(xtable)
 ncwc.table <- xtable(ncwc.table,
-                     caption = "The SMLR model’s genotyping improvements for all examined DNA quantities.",
+                     caption = "The SMLR model's genotyping improvements for all examined DNA quantities.",
                      # caption = "The SMLR model's genotyping improvements relative to the HID SNP Genotyper Plugin (HSG).",
                      label = "tab:NC_WC",
                      digits = d_mat)
