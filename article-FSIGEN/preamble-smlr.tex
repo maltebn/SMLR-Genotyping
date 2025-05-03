@@ -1,0 +1,80 @@
+% Shared preamble for Enhanced-SNP-genotyping-with-SMLR.tex and smlr-supplementary-material.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \subfile{filename} is internally the same as the basic TeX function \include{filename},
+% the difference being that subfiles can be compiled as standalones inheriting the preamble from
+% the main file. Using \include{filename} corresponds to a plain copy-paste of the content of
+% filename.tex into the line where the \include is placed. Thus, if there is no need to compile
+% filename.tex as a standalone, one might as well just use \input to keep things simple.
+\usepackage{subfiles}
+
+%% Defines \sfrac{}{} for slanted fractions:
+\usepackage{xfrac}
+
+%% Defines \mathclap{...} for elimination of horizontal whitespace created by e.g. a long subscript under a summation:
+\usepackage{mathtools} % note: mathtools loads amsmath
+
+%% The siunitx package provides a set of tools to typeset quantities in a consistent way:
+% a useful command is \qty{<number>}{<unit>} which writes the quantity as a product of
+% the number and the unit, so the space here is formally showing multiplication, and it
+% is smaller than a standard space, which makes it look prettier.
+\usepackage{siunitx}
+
+%% Make the standard latex tables look so much better:
+\usepackage{array,booktabs}
+\usepackage{multirow}
+\usepackage{threeparttable}
+
+%% Make landscape pages display as landscape. (Ideal for pages to be read on a screen)
+\usepackage{pdflscape}
+
+%% A better approach to resize e.g. tables to text width
+%% See: https://tex.stackexchange.com/questions/121155/how-to-adjust-a-table-to-fit-on-page
+\usepackage{adjustbox}
+
+%% Extensive control of page headers and footers
+\usepackage{fancyhdr}
+
+%% To handle the formatting of special characters in urls, e.g. in the .bib files, use either the hyperref- or url-package
+\usepackage{url}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Draft/submission and blinded modes %%%%%%%%%%%%%%
+% Switch between draft and submission mode
+\newif\ifsubmission
+\submissionfalse   % <- Set to \submissiontrue for submission mode
+
+% Switch between blinded and non-blinded mode
+\newif\ifblinded
+\blindedfalse   % <- Set to \blindedtrue for blinded mode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of modes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Referencing logic %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Supplementary reference macro
+\newcommand{\suppfig}[2]{
+  \ifsubmission
+    Supplementary Fig.~S#1
+  \else
+    Supplementary Fig.~#2
+  \fi
+}
+
+\newcommand{\supptab}[2]{
+  \ifsubmission
+    Supplementary Table~S#1
+  \else
+    Supplementary Table~#2
+  \fi
+}
+
+\newcommand{\suppeq}[2]{
+  \ifsubmission
+    %Supplementary Eq.~(S#1)
+    (S#1)
+  \else
+    %Supplementary Eq.~(#2)
+    #2 % Assuming that \eqref is used for equation referencing
+  \fi
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of logic %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

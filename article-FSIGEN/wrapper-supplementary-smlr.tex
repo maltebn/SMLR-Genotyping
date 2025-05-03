@@ -1,0 +1,22 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Supplementary material wrapper %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Note: While this wrapper has the structure of a main file for the supplementary material, it
+% isn't intended to be compiled. Instead, compile Supplementary-material-smlr.tex as a standalone.
+% Reason: There seems to be a bug somewhere (probably the 'subfiles' package), since the defined
+% \fancyhead with the "SUPPLEMENTARY MATERIAL" text is NOT printed on page 8 and 9 when the wrapper
+% is compiled, but is printed fine when compiling the subfile as standalone.
+% The header is also printed as expected when this wrapper is compiled using \input{} instead
+% of \subfile{} (with Supplementary-material-smlr.tex changed accordingly), so things point in the
+% direction of a minor bug in the 'subfiles' package.
+\documentclass[preprint,5p,times,11pt]{elsarticle}
+\biboptions{sort&compress}
+
+\input{preamble-smlr}
+\usepackage{xr}
+\externaldocument{Enhanced-SNP-genotyping-with-SMLR} % Link to supplementary material aux file
+
+\begin{document}
+%\input{Supplementary-material-smlr}
+\subfile{Supplementary-material-smlr}
+\end{document}

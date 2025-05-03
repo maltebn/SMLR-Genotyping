@@ -1,0 +1,84 @@
+\documentclass[Enhanced-SNP-genotyping-with-SMLR.tex]{subfiles}
+
+%%%%%%%%%%%%%%%
+% Frontmatter %
+%%%%%%%%%%%%%%%
+\begin{document}
+\begin{frontmatter}
+
+\title{Enhanced SNP genotyping with symmetric multinomial logistic regression}
+
+
+\ifblinded\else % Only include authors and addresses if in non-blinded mode
+  \author[AAU]{Malte B. Nielsen\corref{cor1}}
+  \ead{maltebn@math.aau.dk}
+
+  \author[AAU]{Poul S. Eriksen}
+  \ead{svante@math.aau.dk}
+
+  \author[KU]{Helle S. Mogensen}
+  \ead{helle.smidt@sund.ku.dk}
+
+  \author[AAU,KU]{Niels Morling}
+  \ead{niels.morling@sund.ku.dk}
+
+  \author[AAU,KU]{Mikkel M. Andersen}
+  \ead{mikl@math.aau.dk}
+
+  \cortext[cor1]{Corresponding author}
+
+  \affiliation[AAU]{organization={Department of Mathematical Sciences, Faculty of Engineering, Aalborg University},
+                    city={Aalborg},
+                    country={Denmark}}
+                    
+  \affiliation[KU]{organization={Section of Forensic Genetics, Department of Forensic Medicine, Faculty of Health and Medical Sciences, University of Copenhagen},
+                   city={Copenhagen},
+                   country={Denmark}}
+\fi
+
+
+\begin{abstract}
+In genotyping, determining single nucleotide polymorphisms~(SNPs) is standard practice, but it becomes difficult when analysing small quantities of input DNA, as is often required in forensic applications.
+Existing SNP genotyping methods, such as the HID SNP Genotyper Plugin~(HSG) from Thermo Fisher Scientific, perform well with adequate DNA input levels but often produce erroneously called genotypes when DNA quantities are low.
+To mitigate these errors, genotype quality can be checked with the HSG.
+However, enforcing the HSG's quality checks decreases the call rate by introducing more no-calls, and it does not eliminate all wrong calls.
+This study presents and validates a symmetric multinomial logistic regression~(SMLR) model designed to enhance genotyping accuracy and call rate with small amounts of DNA.
+Comprehensive bootstrap and cross-validation analyses across a wide range of DNA quantities demonstrate the robustness and efficiency of the SMLR model in maintaining high call rates without compromising accuracy compared to the HSG.
+For DNA amounts as low as \SI{31.25}{\pg}, the SMLR method reduced the rate of no-calls by 50.0\% relative to the HSG while maintaining the same rate of wrong calls, resulting in a call rate of 96.0\%.
+Similarly, SMLR reduced the rate of wrong calls by 55.6\% while maintaining the same call rate, achieving an accuracy of 99.775\%.
+The no-call and wrong-call rates were significantly reduced at \SIrange[range-units = single, range-phrase = --]{62.5}{250}{\pg} DNA.
+The results highlight the SMLR model's utility in optimising SNP genotyping at suboptimal DNA concentrations, making it a valuable tool for forensic applications where sample quantity and quality may be decreased.
+This work reinforces the feasibility of statistical approaches in forensic genotyping and provides a framework for implementing the SMLR method in practical forensic settings.
+The SMLR model applies to genotyping biallelic data with a signal (e.g.~reads, counts, or intensity) for each allele.
+The model can also improve the allele balance quality check.
+\end{abstract}
+
+
+%%Graphical abstract
+%\begin{graphicalabstract}
+%\includegraphics{fig-01-methods-classifications.pdf}
+%\end{graphicalabstract}
+
+
+%%Research highlights
+\onecolumn
+\begin{highlights}
+\item A new probabilistic model with few parameters for SNP genotype calling.
+\item The model is based on symmetric multinomial logistic regression (SMLR).
+\item SNP no-call and error rates were reduced by $\sim\!\!\!\:50\%$ at \SI{31}{\pg} DNA compared to the HID SNP Genotyper Plugin (Thermo Fisher Scientific).
+\item The SNP no-call rate was significantly reduced for \SIrange[range-units = single, range-phrase = --]{62}{250}{\pg} DNA.
+\item Quality checks with SMLR improve the detection of allele imbalance.
+\end{highlights}
+
+
+\begin{keyword}
+%% keywords here, in the form: keyword \sep keyword
+Symmetric multinomial logistic regression \sep Forensic genetics \sep Low DNA concentrations \sep Biallelic markers \sep SNP genotyping \sep Massively parallel sequencing
+
+%% PACS codes here, in the form: \PACS code \sep code
+
+%% MSC codes here, in the form: \MSC code \sep code
+%% or \MSC[2008] code \sep code (2000 is the default)
+\end{keyword}
+\end{frontmatter}
+\end{document}
