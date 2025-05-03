@@ -1,28 +1,29 @@
-This folder contains the four tex-files:
-- Enhanced-SNP-Genotyping-with-SMLR.tex
-- table1.tex
-- supplementary-material.tex
-- preamble.tex
+Note: Most publishers want the supplementary material and the main article to be uploaded as two separate files.
+The publishers will then typically only care about typesetting the main article to match their layout while the supplementary material will just be made available as the file(s) the corresponding author has uploaded.
+Many articles are generated with clickable reference links, e.g., by use of the 'doi'-package, but when the main article and the supplementary material are separate files, links from the one file to the other will be broken and behave weird.
+This explains why Elsevier forces the authors to manually type references from the main article to the supplementary material: to avoid dead reference links (which will be annoying and appear amateurish to readers).
+The TeX-files for this article were designed to ease the transition from the drafting/editing phase (where the author wants to use LaTeX's automatic referencing) to the review/submission phase (where the publisher may force the author to manually change all references from the main article to the supplementary material).
+Therefore, the preamble for this document contains referencing logic and defines mode flags for draft/submission mode and blinded/non-blinded mode.
 
-The file 'table1.tex' is included in 'Enhanced-SNP-Genotyping-with-SMLR.tex' by use of 'subfiles'.
+This folder contains the seven tex-files:
+- Enhanced-SNP-genotyping-with-SMLR.tex
+- smlr-frontmatter.tex
+- smlr-main-text.tex
+- smlr-table1.tex
+- Supplementary-material-smlr.tex
+- wrapper-supplementary-material-smlr.tex
+- preamble-smlr.tex
 
-The two files 'Enhanced-SNP-Genotyping-with-SMLR.tex' and 'supplementary-material.tex' are independent documents both using the same preamble defined in 'preamble.tex' (both documents has a '\input{preamble}' before their '\begin{document}').
-However, the two "independent" documents do refer to each others equations and figures.
-To make this cross-referencing possible, the preamble contains the package 'xr' and each document looks into the other document's aux-file by:
-- "Enhanced-SNP-Genotyping-with-SMLR.tex" has a '\externaldocument{supplementary-material}' before its '\begin{document}'.
+The file 'smlr-table1.tex' is included in 'Enhanced-SNP-genotyping-with-SMLR.tex' by use of '\input{}'.
+If draft mode is toggled on (\submissionfalse), then 'Supplementary-material-smlr.tex' is included in the output pdf (using the 'subfiles' package).
+If draft mode is toggled off (\submissiontrue), 'Supplementary-material-smlr.tex' should be compiled as a standalone.
+While 'wrapper-supplementary-material-smlr.tex' has the structure of a main file for 'Supplementary-material-smlr.tex', it isn't intended to be compiled. Instead, compile 'Supplementary-material-smlr.tex' as a standalone.
+Reason: There seems to be a bug somewhere (probably the 'subfiles' package), since the defined \fancyhead with the "SUPPLEMENTARY MATERIAL" text is NOT printed on the supplementary material's page 8 and 9 when the wrapper is compiled, but it is printed as expected when compiling the subfile as standalone.
 
-- "supplementary-material" has a '\externaldocument{Enhanced-SNP-Genotyping-with-SMLR.tex}' before its '\begin{document}'.
+If blinded mode is toggled on (\blindedtrue), then logic like below is used to hide author information from the frontmatter and certain sentences in the main text:
 
-Since both documents refer to each other, at least one of the documents has to be re-compiled after compilation of the other, e.g.:
-- Compile 'supplementary-material.tex'
-- Compile 'Enhanced-SNP-Genotyping-with-SMLR.tex'
-- Build bbl-file (BibTeX)
-- Compile 'Enhanced-SNP-Genotyping-with-SMLR.tex' twice to get bibliography
-- Re-compile 'supplementary-material.tex'
-
-When uploading source code to e.g. arXiv's or Elsevier's servers, be sure to include the bbl-file (at least for arXiv) and the precompiled aux-files for each document.
-This should allow the servers to build the pdf for the main article without problems.
-
-The pdf with the supplementary material should probably be uploaded as a pdf and not as source code.
-I'm not sure yet, but the two mentioned servers don't seem to be set up for building other than the main article, and since Elsevier says that the main article and the supplementary material should be separated, uploading the supplementary material as a precompiled pdf seems to be the only option.
-(Elsevier wants to be able to standardize the visual look of the main article, but cares less about the supplementary material, since this is not be printed in the journal. This explains why they accept supplementary material to be less editable)
+\ifblinded
+Text with no author information.
+\else
+Text with author information.
+\fi
