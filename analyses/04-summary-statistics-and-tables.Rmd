@@ -506,7 +506,7 @@ tab1 <- c(tab1[3:6],
           "\\end{adjustbox}",
           tab1[36])
 
-write_lines(tab1, file.path("..", "article-FSIGEN", "table1.tex"))
+write_lines(tab1, file.path("..", "article-FSIGEN", "smlr-table1.tex"))
 file.remove(file.path("..", "article-FSIGEN", "xtable1.tex"))
 ```
 
@@ -578,7 +578,7 @@ MTK table LaTeX-refinements
 #           "\\end{adjustbox}",
 #           tab1[36])
 # 
-# write_lines(tab1, file.path("..", "article-FSIGEN", "table1.tex"))
+# write_lines(tab1, file.path("..", "article-FSIGEN", "smlr-table1.tex"))
 # file.remove(file.path("..", "article-FSIGEN", "xtable1.tex"))
 ```
 
