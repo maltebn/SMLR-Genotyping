@@ -8,17 +8,15 @@ Therefore, the preamble for this document contains referencing logic and defines
 This folder contains the seven tex-files:
 - Enhanced-SNP-genotyping-with-SMLR.tex
 - smlr-frontmatter.tex
-- smlr-main-text.tex
+- smlr-main-contents.tex
 - smlr-table1.tex
 - Supplementary-material-smlr.tex
-- wrapper-supplementary-material-smlr.tex
+- supplementary-contents-smlr.tex
 - preamble-smlr.tex
 
 The file 'smlr-table1.tex' is included in 'Enhanced-SNP-genotyping-with-SMLR.tex' by use of '\input{}'.
-If draft mode is toggled on (\submissionfalse), then 'Supplementary-material-smlr.tex' is included in the output pdf (using the 'subfiles' package).
-If draft mode is toggled off (\submissiontrue), 'Supplementary-material-smlr.tex' should be compiled as a standalone.
-While 'wrapper-supplementary-material-smlr.tex' has the structure of a main file for 'Supplementary-material-smlr.tex', it isn't intended to be compiled. Instead, compile 'Supplementary-material-smlr.tex' as a standalone.
-Reason: There seems to be a bug somewhere (probably the 'subfiles' package), since the defined \fancyhead with the "SUPPLEMENTARY MATERIAL" text is NOT printed on the supplementary material's page 8 and 9 when the wrapper is compiled, but it is printed as expected when compiling the subfile as standalone.
+If draft mode is toggled on (\submissionfalse), then 'Supplementary-contents-smlr.tex' is included in the output pdf (OBS: this is done using the '\input{}' function, since the 'subfiles' package will not render all headers correctly in the supplementary material).
+If draft mode is toggled off (\submissiontrue), 'Supplementary-material-smlr.tex' should be compiled to generate a separate pdf with the supplementary material.
 
 If blinded mode is toggled on (\blindedtrue), then logic like below is used to hide author information from the frontmatter and certain sentences in the main text:
 

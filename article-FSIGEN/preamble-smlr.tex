@@ -37,16 +37,33 @@
 %% To handle the formatting of special characters in urls, e.g. in the .bib files, use either the hyperref- or url-package
 \usepackage{url}
 
+%% The lineno packages adds line numbers. Start line numbering with
+%% \begin{linenumbers}, end it with \end{linenumbers}. Or switch it on
+%% for the whole article with \linenumbers.
+%\usepackage{lineno}
+%% For linenumbers at every fifth line use
+\usepackage[modulo]{lineno}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Draft/submission and blinded modes %%%%%%%%%%%%%%
-% Switch between draft and submission mode
-\newif\ifsubmission
-\submissionfalse   % <- Set to \submissiontrue for submission mode
-
-% Switch between blinded and non-blinded mode
+% Switch between blinded or non-blinded mode (\blindedtrue or \blindedfalse)
+% Blinded: Removes author details from frontmatter and replaces other identifying information with placeholders.
+%          Adds linenumbers at every fifth line in main text.
+% Non-blinded: Prints author and identifying information. No line numbers.
 \newif\ifblinded
 \blindedfalse   % <- Set to \blindedtrue for blinded mode
+
+% Switch between draft or submission mode (\submissionfalse or \submissiontrue)
+% Draft: Gathers main article and supplementary material into one pdf with clickable cross-referencing.
+% Submission: Main article and supplementary material should be compiled separately.
+%             References from main to main are clickable, but not from main to supplementary.
+%             No clickable references in supplementary material.
+\newif\ifsubmission
+\submissiontrue   % <- Set to \submissionfalse for draft mode
+% Note: Submission mode should be toggled on by default as this is the only option that makes sense
+%       when compiling the supplementary material as standalone. With submission mode as default, we don't
+%       need to toggle anything in 'wrapper-supplementary-smlr.tex'.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of modes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

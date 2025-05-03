@@ -4,24 +4,36 @@
 
 %% Use the options 1p,twocolumn; 3p; 3p,twocolumn; 5p; or 5p,twocolumn
 %% for a journal layout:
-\documentclass[preprint,5p,times,11pt]{elsarticle}
+%\documentclass[review,doubleblind,3p,times,11pt]{elsarticle}
+%\documentclass[review,3p,times,11pt]{elsarticle}
+\documentclass[preprint,3p,times,11pt]{elsarticle}
+%\documentclass[preprint,5p,times,11pt]{elsarticle}
 \biboptions{sort&compress}
 
 \input{preamble-smlr}
-\submissionfalse   % <- Set to \submissiontrue for submission mode
-\blindedtrue   % <- Set to \blindedtrue for blinded mode
+% Set to \blindedfalse or \blindedtrue for non-blinded or blinded mode:
+\blindedfalse
+% Blinded: Removes author details from frontmatter and replaces other identifying information with placeholders.
+%          Adds linenumbers at every fifth line in main text.
+% Non-blinded: Prints author and identifying information. No line numbers.
+
+% Set to \submissionfalse or \submissiontrue for draft/submission mode:
+\submissionfalse
+% Draft: Gathers main article and supplementary material into one pdf with clickable cross-referencing.
+% Submission: Main article and supplementary material should be compiled separately.
+%             References from main to main are clickable, but not from main to supplementary.
+%             No clickable references in supplementary material.
+ 
 
 \usepackage{doi}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Document settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % Higher penalty for linebreaking in inline math (default is \relpenalty=500 and \binoppenalty=700):
 \relpenalty=9999
 \binoppenalty=9999
 % Redefining figure naming (to be redefined again in Supplementary material)
 \renewcommand{\figurename}{Fig.}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -31,10 +43,11 @@
 \begin{document}
 
 %% Frontmatter
+\ifblinded\linenumbers\else\fi
 \subfile{smlr-frontmatter}
 
 %% Main text
-\subfile{smlr-main-text}
+\subfile{smlr-main-contents}
 
 
 
@@ -61,8 +74,8 @@
   % Note: Use \clearpage and NOT \newpage, since
   % the former flushes floating elements (like figures and tables) while the latter don't.
   % By using \clearpage, floating elements are then forced to appear BEFORE the \clearpage.
-  \subfile{Supplementary-material-smlr}
-  %\input{Supplementary-material-smlr}
+  \input{supplementary-contents-smlr}
+  % OBS: Some headers don't render properly if '\subfile{}' is used. Thus, stick with '\input{}'!!!
 \fi
 
 %% Note: Most publishers want the supplementary material and the main article to be uploaded as two separate files.
