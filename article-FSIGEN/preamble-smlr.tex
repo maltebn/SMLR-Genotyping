@@ -69,29 +69,30 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Referencing logic %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Supplementary reference macro
-\newcommand{\suppfig}[2]{
+\newcommand{\suppfig}[2]{%
   \ifsubmission
-    Supplementary Fig.~S#1
+    Supplementary Fig.~S#1%
   \else
-    Supplementary Fig.~#2
+    Supplementary Fig.~#2%
   \fi
 }
 
-\newcommand{\supptab}[2]{
+\newcommand{\supptab}[2]{%
   \ifsubmission
-    Supplementary Table~S#1
+    Supplementary Table~S#1%
   \else
-    Supplementary Table~#2
+    Supplementary Table~#2%
   \fi
 }
 
-\newcommand{\suppeq}[2]{
+% Assuming that \eqref is used for equation referencing:
+\newcommand{\suppeq}[2]{%
   \ifsubmission
     %Supplementary Eq.~(S#1)
-    (S#1)
+    (S#1)%
   \else
     %Supplementary Eq.~(#2)
-    #2 % Assuming that \eqref is used for equation referencing
+    #2%
   \fi
 }
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of logic %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
