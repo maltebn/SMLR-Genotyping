@@ -2,7 +2,7 @@
 This repository contains all analysis, figure, and table generation scripts for the article: \
 'Enhanced SNP genotyping with symmetric multinomial logistic regression' \
 (peer-reviewed and accepted for publication at Forensic Science International: Genetics) \
-[DOI: insert when received from publisher]
+[DOI: 10.1016/j.fsigen.2025.103291]
 
 The repository is published on GitHub and preserved on Zenodo. \
 [https://github.com/maltebn/SMLR-Genotyping.git] \
